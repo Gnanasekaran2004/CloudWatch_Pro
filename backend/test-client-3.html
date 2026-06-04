@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Dashboard Test Client 3</title>
+  <style>
+    body { font-family: system-ui, sans-serif; background: #0f172a; color: #e2e8f0; margin: 2rem; }
+    .status-bar { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 2rem; background: #1e293b; padding: 1rem; border-radius: 8px; }
+    .dot { width: 12px; height: 12px; border-radius: 50%; background: #64748b; transition: background 0.3s; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+    .card { background: #1e293b; padding: 1.5rem; border-radius: 8px; border: 1px solid #334155; }
+    .card h3 { margin: 0 0 0.5rem 0; color: #94a3b8; font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.05em; }
+    .card .val { font-size: 1.75rem; font-weight: bold; }
+    .history { font-family: monospace; font-size: 0.85rem; color: #38bdf8; word-break: break-all; margin-top: 0.5rem; background: #0f172a; padding: 0.5rem; border-radius: 4px; }
+    .controls { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1.5rem; }
+    button { background: #334155; color: white; border: none; padding: 0.6rem 1.2rem; border-radius: 6px; cursor: pointer; font-weight: 500; }
+    button:hover { background: #475569; }
+    button.danger { background: #991b1b; }
+    button.danger:hover { background: #b91c1c; }
+    .snapshot-log { background: #1e293b; padding: 1rem; border-radius: 8px; border-left: 4px solid #a855f7; min-height: 1.5rem; font-family: monospace; }
+  </style>
+</head>
+<body>
+
+  <h1>System Metrics Monitoring</h1>
+
+  <div class="status-bar">
+    <div id="statusDot" class="dot"></div>
+    <span id="statusText">Connecting...</span>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h3>CPU Usage</h3>
+      <div id="cpuVal" class="val">--</div>
+      <div id="cpuHistory" class="history">[]</div>
+    </div>
+    <div class="card">
+      <h3>Memory</h3>
+      <div id="memVal" class="val">--</div>
+    </div>
+    <div class="card">
+      <h3>Disk</h3>
+      <div id="diskVal" class="val">--</div>
+    </div>
+    <div class="card">
+      <h3>Network</h3>
+      <div id="netVal" class="val">--</div>
+    </div>
+  </div>
+
+  <h2>Subscription & Controls</h2>
+  <div class="controls">
+    <button id="btnCpu">CPU Only</button>
+    <button id="btnAll">All Metrics</button>
+    <span>|</span>
+    <button id="btnFast">Fast (500ms)</button>
+    <button id="btnNormal">Normal (1000ms)</button>
+    <button id="btnSlow">Slow (3000ms)</button>
+    <span>|</span>
+    <button id="btnSnapshot" style="background: #a855f7;">Request Snapshot</button>
+    <button id="btnStop" class="danger">Stop Listening</button>
+  </div>
+
+  <h2>Snapshot Panel</h2>
+  <div id="snapshotLog" class="snapshot-log">No manual snapshot requested yet.</div>
+
+  <script type="module">
+    import { SocketClient } from './SocketClient.js'
+
+    const client = new SocketClient('http://localhost:3000')
+    client.connect()
+
+    const cpuHistoryArray = []
+
+    const statusDot = document.getElementById('statusDot')
+    const statusText = document.getElementById('statusText')
+    const cpuVal = document.getElementById('cpuVal')
+    const cpuHistory = document.getElementById('cpuHistory')
+    const memVal = document.getElementById('memVal')
+    const diskVal = document.getElementById('diskVal')
+    const netVal = document.getElementById('netVal')
+    const snapshotLog = document.getElementById('snapshotLog')
+
+    const unsubStatus = client.on('statusChange', (status) => {
+      if (status.connected) {
+        statusDot.style.background = '#22c55e'
+        statusText.textContent = `Connected (ID: ${status.id})`
+      } else {
+        statusDot.style.background = '#ef4444'
+        statusText.textContent = `Disconnected: ${status.reason || 'Unknown error'}`
+      }
+    })
+
+    const unsubMetrics = client.on('metrics', (data) => {
+      if (data.cpu !== undefined) {
+        const cpuPercent = typeof data.cpu === 'object' ? data.cpu.percent : data.cpu
+        cpuVal.textContent = `${cpuPercent}%`
+        
+        cpuHistoryArray.push(Number(cpuPercent))
+        if (cpuHistoryArray.length > 10) cpuHistoryArray.shift()
+        
+        cpuHistory.textContent = `[${cpuHistoryArray.map(n => n.toFixed(1)).join(', ')}]`
+      }
+
+      if (data.memory !== undefined) {
+        const memPercent = typeof data.memory === 'object' ? data.memory.percent : data.memory
+        memVal.textContent = `${memPercent}%`
+      }
+
+      if (data.disk !== undefined) {
+        const diskPercent = typeof data.disk === 'object' ? data.disk.percent : data.disk
+        diskVal.textContent = `${diskPercent}%`
+      }
+
+      if (data.network !== undefined) {
+        const netRx = typeof data.network === 'object' ? data.network.rx_mb : data.network
+        netVal.textContent = typeof netRx === 'number' ? `${netRx.toFixed(1)} MB/s` : `${netRx}`
+      }
+    })
+
+    document.getElementById('btnCpu').addEventListener('click', () => client.subscribe('cpu'))
+    document.getElementById('btnAll').addEventListener('click', () => client.subscribe(null))
+    document.getElementById('btnFast').addEventListener('click', () => client.setInterval(500))
+    document.getElementById('btnNormal').addEventListener('click', () => client.setInterval(1000))
+    document.getElementById('btnSlow').addEventListener('click', () => client.setInterval(3000))
+
+    document.getElementById('btnSnapshot').addEventListener('click', () => {
+      client.requestSnapshot((response) => {
+        if (response.error) {
+          snapshotLog.textContent = `Snapshot error: ${response.error}`
+          return
+        }
+        
+        const now = new Date()
+        const hhmmss = now.toTimeString().split(' ')[0]
+        const cpuInfo = response.data?.cpu
+        const cpuPercent = typeof cpuInfo === 'object' ? cpuInfo.percent : cpuInfo
+
+        snapshotLog.textContent = `Snapshot received at ${hhmmss} — CPU: ${cpuPercent}%`
+      })
+    })
+
+    document.getElementById('btnStop').addEventListener('click', () => {
+      unsubStatus()
+      unsubMetrics()
+      statusText.textContent = "Stopped listening. UI updates frozen."
+      statusDot.style.background = '#64748b' 
+    })
+  </script>
+</body>
+</html>

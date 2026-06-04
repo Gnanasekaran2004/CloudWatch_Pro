@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<body>
+  <h2>Socket.io Client 2</h2>
+ 
+  <div id="status" style="font-weight: bold; margin-bottom: 1rem;">Disconnected</div>
+
+  <input id="nameInput" placeholder="Enter your name" />
+  <button onclick="setName()">Join</button>
+
+  <button onclick="sendPing()">Send Ping</button>
+
+  <pre id="log" style="height:300px;overflow-y:auto;background:#111;
+       color:#0f0;padding:1rem;margin-top:1rem"></pre>
+
+  <script src="http://localhost:3000/socket.io/socket.io.js"></script>
+  <script>
+
+    const socket = io('http://localhost:3000')
+    let pingCount = 0
+
+    const addLine = (msg, color = 'green') => {
+      const el = document.getElementById('log')
+      const time = new Date().toLocaleTimeString()
+      
+      el.textContent = `[${time}] ${msg}\n` + el.textContent
+    }
+
+    socket.on('connect',()=>{
+       
+        const statusEl = document.getElementById('status')
+        statusEl.textContent = `Connected — ID: ${socket.id}`
+        statusEl.style.color = 'green'
+        addLine(`Connected with ID: ${socket.id}`, 'green')
+    })
+
+    socket.on('disconnect', (reason) => {
+      const statusEl = document.getElementById('status')
+      statusEl.textContent = `Disconnected: ${reason}`
+      statusEl.style.color = 'red'
+      addLine(`Disconnected: ${reason}`, 'red')
+    })
+    
+    socket.on('welcome', (data) => {
+      addLine(`Welcome: ${data.message}`, 'blue')
+    })
+
+    socket.on('tick', (data) => {
+      if (data.count % 5 === 0) {
+        addLine(`Tick ${data.count}: ${data.time}`, 'gray')
+      }
+    })
+
+    socket.on('pong', (data) => {
+      addLine(`Pong received: ${JSON.stringify(data)}`, 'purple')
+    })
+
+    socket.on('room-message', (data) => {
+      addLine(`Room message received: ${JSON.stringify(data)}`, 'blue')
+    })
+
+    function setName(){
+        const name = document.getElementById('nameInput').value
+        socket.emit('set-name', name)
+    }
+
+    function sendPing(){
+        socket.emit('ping', { count: ++pingCount })
+        addLine(`Sent ping ${pingCount}`, 'orange')
+    }
+  </script>
+</body>
+</html>

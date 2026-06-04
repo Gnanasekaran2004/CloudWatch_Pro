@@ -1,0 +1,27 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: #0f172a;
+  color: #e2e8f0;
+  min-height: 100vh;
+}
+
+:root {
+  --bg-primary:   #0f172a;
+  --bg-card:      #1e293b;
+  --bg-hover:     #334155;
+  --border:       #334155;
+  --text-primary: #e2e8f0;
+  --text-muted:   #94a3b8;
+  --green:        #22c55e;
+  --yellow:       #f59e0b;
+  --red:          #ef4444;
+  --blue:         #38bdf8;
+  --purple:       #a855f7;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}

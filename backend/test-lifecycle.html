@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head><title>Connection Lifecycle</title>
+<style>
+  body { font-family: monospace; background: #111; color: #ccc; padding: 2rem; }
+  .event { padding: 4px 8px; margin: 2px 0; border-radius: 4px; font-size: 13px; }
+  .connect    { background: #1a3a1a; color: #4ade80; }
+  .disconnect { background: #3a1a1a; color: #f87171; }
+  .data       { background: #1a1a3a; color: #93c5fd; }
+  .error      { background: #3a2a1a; color: #fb923c; }
+  button { background: #222; color: #fff; border: 1px solid #444;
+           padding: 6px 14px; margin: 4px; cursor: pointer; }
+</style>
+</head>
+<body>
+  <h2>Lifecycle Test</h2>
+
+  <div>
+    <button onclick="manualConnect()">Connect</button>
+    <button onclick="manualDisconnect()">Disconnect</button>
+    <button onclick="checkStatus()">Status</button>
+    <button onclick="clearLog()">Clear</button>
+  </div>
+
+  <div id="log" style="margin-top:1rem"></div>
+
+  <script src="http://localhost:3000/socket.io/socket.io.js"></script>
+  <script>
+    // autoConnect: false — connect manually
+    const socket = io('http://localhost:3000', {
+      autoConnect:     false,
+      reconnection:    true,
+      reconnectionDelay: 1000,       // wait 1s before retrying
+      reconnectionAttempts: 5        // give up after 5 tries
+    })
+
+    const log = (msg, type = 'data') => {
+      const el   = document.getElementById('log')
+      const time = new Date().toLocaleTimeString()
+      el.innerHTML = `<div class="event ${type}">[${time}] ${msg}</div>` + el.innerHTML
+    }
+
+    // ── Core lifecycle events ───────────────────────────────
+    socket.on('connect', () => {
+      log(`Connected — ID: ${socket.id}`, 'connect')
+    })
+
+    socket.on('disconnect', (reason) => {
+      log(`Disconnected — ${reason}`, 'disconnect')
+      // reason can be:
+      // 'io server disconnect' → server kicked us
+      // 'io client disconnect' → we called socket.disconnect()
+      // 'transport close'      → network dropped
+      // 'transport error'      → connection error
+    })
+
+    socket.on('connect_error', (err) => {
+      log(`Connection error: ${err.message}`, 'error')
+    })
+
+    socket.on('reconnect', (attempt) => {
+      log(`Reconnected after ${attempt} attempt(s)`, 'connect')
+    })
+
+    socket.on('reconnect_attempt', (attempt) => {
+      log(`Reconnect attempt ${attempt}...`, 'error')
+    })
+
+    socket.on('reconnect_failed', () => {
+      log('Reconnection failed — gave up', 'error')
+    })
+
+    socket.on('metrics', (data) => {
+      if (data.cpu) log(`CPU: ${data.cpu.percent}%`, 'data')
+    })
+
+    // ── Manual controls ─────────────────────────────────────
+    const manualConnect    = () => socket.connect()
+    const manualDisconnect = () => socket.disconnect()
+    const checkStatus      = () => {
+      log(`Connected: ${socket.connected} | ID: ${socket.id || 'none'}`)
+    }
+    const clearLog = () => document.getElementById('log').innerHTML = ''
+  </script>
+</body>
+</html>

@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Live Metrics</title>
+  <style>
+    body { font-family: monospace; background: #111; color: #0f0; padding: 2rem; }
+    .card { background: #1a1a1a; border: 1px solid #333; border-radius: 8px; padding: 1rem; margin: 0.5rem 0; }
+    .label { color: #888; font-size: 12px; }
+    .value { font-size: 24px; font-weight: bold; margin: 4px 0; }
+    .green  { color: #22c55e; }
+    .yellow { color: #f59e0b; }
+    .red    { color: #ef4444; }
+    .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; }
+    #log  { height: 150px; overflow-y: auto; background: #0a0a0a; padding: 0.5rem; margin-top: 1rem; font-size: 12px; }
+    button { background: #222; color: #fff; border: 1px solid #444; padding: 5px 10px; cursor: pointer; font-family: monospace; margin-right: 5px; margin-top: 10px; }
+    button:hover { background: #333; }
+  </style>
+</head>
+<body>
+  <h2>Resource Monitor — Live <span id="dot" style="color:red">●</span></h2>
+
+  <div class="grid">
+    <div class="card">
+      <div class="label">CPU</div>
+      <div id="cpu" class="value">--</div>
+    </div>
+    <div class="card">
+      <div class="label">Memory</div>
+      <div id="mem" class="value">--</div>
+    </div>
+    <div class="card">
+      <div class="label">Disk</div>
+      <div id="disk" class="value">--</div>
+    </div>
+    <div class="card">
+      <div class="label">Network ↓</div>
+      <div id="net" class="value">--</div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:0.5rem">
+    <div class="label">Top Process</div>
+    <div id="top-proc" class="value" style="font-size:16px">--</div>
+  </div>
+
+  <div class="card">
+    <div class="label">Open Ports</div>
+    <div id="ports" style="font-size:13px;margin-top:4px">--</div>
+  </div>
+
+  <div class="label" style="margin-top:1rem">Event log</div>
+  <div id="log"></div>
+
+  <button onclick="socket.emit('subscribe', 'cpu')">CPU only</button>
+  <button onclick="socket.emit('set-interval', 500)">Fast (500ms)</button>
+  <button onclick="socket.emit('set-interval', 5000)">Slow (5s)</button>
+  <button onclick="socket.emit('set-interval', 99)">Invalid interval</button>
+
+  <script src="http://localhost:3000/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io('http://localhost:3000')
+
+    const color = (pct) => pct > 80 ? 'red' : pct > 60 ? 'yellow' : 'green'
+
+    const fmt = (bytes) => {
+      if (!bytes || isNaN(bytes)) return '0 B/s'
+      if (bytes > 1e6) return (bytes/1e6).toFixed(1)+' MB/s'
+      if (bytes > 1e3) return (bytes/1e3).toFixed(1)+' KB/s'
+      return bytes+' B/s'
+    }
+
+    const log = (msg) => {
+      const el = document.getElementById('log')
+      const t  = new Date().toLocaleTimeString()
+      el.innerHTML = `<div>[${t}] ${msg}</div>` + el.innerHTML
+    }
+
+    socket.on('connect', () => {
+      document.getElementById('dot').style.color = 'lime'
+      log(`Connected — ${socket.id}`)
+    })
+
+    socket.on('disconnect', (reason) => {
+      document.getElementById('dot').style.color = 'red'
+      log(`Disconnected — ${reason}`)
+    })
+    socket.on('ping-check', (data) => {
+      socket.emit('pong-check', { originalTime: data.time })
+    })
+    socket.on('connected', (data) => {
+      log(`Server says hello — polling every ${data.interval}ms`)
+    })
+
+    let updateCount = 0
+    socket.on('metrics', (data) => {
+      updateCount++
+      
+      if (data.cpu) {
+        const cpuEl = document.getElementById('cpu')
+        cpuEl.textContent = data.cpu.percent + '%'
+        cpuEl.className   = `value ${color(data.cpu.percent)}`
+      }
+
+      if (data.memory) {
+        const memEl = document.getElementById('mem')
+        memEl.textContent = data.memory.percent + '%'
+        memEl.className   = `value ${color(data.memory.percent)}`
+      }
+
+      if (data.disk) {
+        const diskEl = document.getElementById('disk')
+        diskEl.textContent = data.disk.percent + '%'
+        diskEl.className   = `value ${color(data.disk.percent)}`
+      }
+
+      if (data.network) {
+        document.getElementById('net').textContent = fmt(data.network.rx_sec)
+      }
+
+      if (data.processes && data.processes[0]) {
+        const top = data.processes[0]
+        document.getElementById('top-proc').textContent = `${top.name} — CPU: ${top.cpu}%  MEM: ${top.mem}%`
+      }
+
+      if (data.ports) {
+        document.getElementById('ports').textContent = data.ports.map(p => `:${p.port}`).join('  ') || 'none'
+      }
+
+      if (updateCount % 5 === 0 && data.cpu) {
+        log(`Update #${updateCount} — CPU: ${data.cpu.percent}%`)
+      }
+    })
+
+    socket.on('warning', (data) => {
+      if (data && data.message) {
+        log(`⚠ Warning: ${data.message}`)
+      }
+    })
+  </script>
+</body>
+</html>
