@@ -58,7 +58,6 @@ function App() {
     addCpuPoint, addMemPoint, addRxPoint, addTxPoint,
     addDiskRead, addDiskWrite])
 
-  // CPU spike alert
   useEffect(() => {
     if (currentCpu !== undefined && prevCpu !== undefined) {
       if (currentCpu > 80 && prevCpu <= 80) {
@@ -70,7 +69,6 @@ function App() {
     }
   }, [currentCpu, prevCpu, toast])
 
-  // Connection status toasts
   useEffect(() => {
     if (connected && !prevConnected && prevConnected !== undefined) {
       toast.success('Connected to backend')
@@ -83,7 +81,6 @@ function App() {
     }
   }, [error, prevError, toast])
 
-  // Keyboard shortcuts
   useEffect(() => {
     const handler = (e) => {
       if (e.target.tagName === 'INPUT') return
@@ -164,7 +161,6 @@ function App() {
         <HistoryView />
       )}
 
-      {/* Keyboard hints — bottom of return */}
       <div style={{ marginTop: '2rem', paddingTop: '1rem',
                     borderTop: '1px solid var(--border)',
                     display: 'flex', gap: '1.5rem',

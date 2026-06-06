@@ -20,14 +20,12 @@ export class MetricsEmitter extends EventEmitter {
     this.isPaused  = false
     this.startTime = Date.now()
     this._startTimer()
-    console.log(`MetricsEmitter started — polling every ${this.intervalMs}ms`)
   }
 
   stop() {
     this._clearTimer()
     this.isRunning = false
     this.isPaused  = false
-    console.log('MetricsEmitter stopped')
   }
 
   pause() {

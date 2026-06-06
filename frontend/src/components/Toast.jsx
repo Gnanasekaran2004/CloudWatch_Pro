@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
 
-// Toast item
 const ToastItem = ({ toast, onRemove }) => {
   useEffect(() => {
     const timer = setTimeout(() => onRemove(toast.id), toast.duration ?? 3000)
@@ -49,7 +48,6 @@ const ToastItem = ({ toast, onRemove }) => {
   )
 }
 
-// Toast container — fixed position, stacks toasts
 export function ToastContainer({ toasts, onRemove }) {
   return (
     <div style={{
@@ -68,7 +66,6 @@ export function ToastContainer({ toasts, onRemove }) {
   )
 }
 
-// Hook — useToast()
 export const useToast = () => {
   const [toasts, setToasts] = useState([])
 

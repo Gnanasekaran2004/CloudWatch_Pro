@@ -2,9 +2,9 @@ import si from 'systeminformation'
 import { safeFetch } from './fetcher.js'
 
 export const getTopProcesses = async ({
-  sortBy  = 'cpu',   
+  sortBy  = 'cpu',
   limit   = 20,
-  minCpu  = 0       
+  minCpu  = 0
 } = {}) => {
 
   const raw = await safeFetch(
@@ -22,7 +22,7 @@ export const getTopProcesses = async ({
       name:    p.name,
       cpu:     parseFloat(p.cpu.toFixed(1)),
       mem:     parseFloat(p.mem.toFixed(1)),
-      memRss:  p.memRss,    
+      memRss:  p.memRss,
       state:   p.state,
       user:    p.user,
       started: p.started

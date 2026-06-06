@@ -1,15 +1,15 @@
 const colors = {
-  GET:    '\x1b[32m',  
-  POST:   '\x1b[34m',  
-  DELETE: '\x1b[31m', 
+  GET:    '\x1b[32m',
+  POST:   '\x1b[34m',
+  DELETE: '\x1b[31m',
   reset:  '\x1b[0m'
 }
 
 const statusColor = (code) => {
-  if (code < 300) return '\x1b[32m'   
-  if (code < 400) return '\x1b[33m'   
-  if (code < 500) return '\x1b[33m'   
-  return '\x1b[31m'                  
+  if (code < 300) return '\x1b[32m'
+  if (code < 400) return '\x1b[33m'
+  if (code < 500) return '\x1b[33m'
+  return '\x1b[31m'
 }
 
 export const requestLogger = (req, res, next) => {

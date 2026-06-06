@@ -1,9 +1,9 @@
 
-const requests = new Map()  
+const requests = new Map()
 
 export const rateLimit = ({
-  windowMs = 60000,    
-  max      = 100       
+  windowMs = 60000,
+  max      = 100
 } = {}) => {
   return (req, res, next) => {
     const ip  = req.ip

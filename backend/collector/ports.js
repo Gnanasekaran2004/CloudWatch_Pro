@@ -41,7 +41,7 @@ export const getPorts = async ({ stateFilter = 'LISTEN' } = {}) => {
         protocol:  c.protocol,
         state:     c.state,
         pid:       c.pid,
-        label:     KNOWN_PORTS[portNum] || null, 
+        label:     KNOWN_PORTS[portNum] || null,
         isKnown:   Boolean(KNOWN_PORTS[portNum])
       })
     }

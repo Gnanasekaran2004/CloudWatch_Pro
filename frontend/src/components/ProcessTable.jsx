@@ -1,7 +1,6 @@
 import { useState, useMemo, useCallback, memo, useRef, useEffect } from 'react'
 import ProcessRow from './ProcessRow'
 
-// Wrap ProcessRow with memo — skips re-render if props unchanged
 const MemoProcessRow = memo(ProcessRow)
 
 function ProcessTable({ processes = [], loading }) {
@@ -9,30 +8,24 @@ function ProcessTable({ processes = [], loading }) {
   const [search,  setSearch]  = useState('')
   const [showAll, setShowAll] = useState(false)
 
-  // 1. Setup the scrollable container reference
   const tableRef = useRef(null)
   
-  // 2. Setup a ref to track the previous top process PID across renders
   const currentTopPid = processes[0]?.pid
   const prevTopPidRef = useRef(currentTopPid)
 
-  // 3. Auto-scroll mechanism when the top process changes
   useEffect(() => {
     if (currentTopPid !== prevTopPidRef.current) {
       if (tableRef.current) {
         tableRef.current.scrollTop = 0
       }
-      // Update the tracking ref to the new PID value
       prevTopPidRef.current = currentTopPid
     }
   }, [currentTopPid])
 
-  // useCallback — setSortBy is stable, so these never change
   const sortByCpu = useCallback(() => setSortBy('cpu'), [])
   const sortByMem = useCallback(() => setSortBy('mem'), [])
   const toggleShowAll = useCallback(() => setShowAll(v => !v), [])
 
-  // useMemo — same as before, all 4 dependencies correct
   const filtered = useMemo(() => {
     let list = [...processes]
     if (search.trim()) {
@@ -58,7 +51,6 @@ function ProcessTable({ processes = [], loading }) {
     }
   }, [processes])
 
-  // useCallback for search handler
   const handleSearch = useCallback((e) => {
     setSearch(e.target.value)
   }, [])
@@ -117,7 +109,6 @@ function ProcessTable({ processes = [], loading }) {
         <div style={{ color: sortBy === 'mem' ? 'var(--blue)' : 'inherit' }}>MEM</div>
       </div>
 
-      {/* 4. Scrollable target wrapper wrapped around the table rendering logic */}
       <div ref={tableRef} style={{ maxHeight: '400px', overflowY: 'auto' }}>
         {loading
           ? [1,2,3,4,5].map(i => (
