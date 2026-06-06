@@ -75,7 +75,8 @@ function HistoryView() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetch('/api/history?range=30m')
+    const base = import.meta.env.VITE_BACKEND_URL || ''
+    fetch(`${base}/api/history?range=30m`)
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) {

@@ -1,4 +1,4 @@
-const BASE = ''
+const BASE = import.meta.env.VITE_BACKEND_URL || ''
 
 const handleResponse = async (res) => {
   if (!res.ok) {
