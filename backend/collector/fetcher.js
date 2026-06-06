@@ -24,7 +24,8 @@ export const fetchAllRaw = async () => {
     safeFetch(() => si.fsSize(),             [], 'disk'),
     safeFetch(() => si.networkStats(),       [], 'network'),
     safeFetch(() => si.processes(),          { list: [] }, 'processes'),
-    safeFetch(() => si.networkConnections(), [], 'ports')
+    safeFetch(() => si.networkConnections(), [], 'ports'),
+    safeFetch(() => si.disksIO(), { rIO_sec: 0, wIO_sec: 0 }, 'disksIO')
   ])
 
   return { cpuLoad, mem, disk, net, procs, conns }

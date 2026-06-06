@@ -1,11 +1,11 @@
 import { formatPercent } from '../utils/index.js'
 
 export const shapeSnapshot = (rawData) => {
-  const { cpuLoad, mem, disk, net, procs, conns } = rawData
+  const { cpuLoad, mem, disk, net, procs, conns, diskIO } = rawData
 
   const mainDisk = disk?.[0]  || { size: 0, used: 0, use: 0 }
   const mainNet  = net?.[0]   || { rx_sec: 0, tx_sec: 0 }
-
+  
   const processes = (procs?.list || [])
     .sort((a, b) => b.cpu - a.cpu)
     .slice(0, 20)
@@ -48,7 +48,9 @@ export const shapeSnapshot = (rawData) => {
     disk: {
       total:   mainDisk.size,
       used:    mainDisk.used,
-      percent: formatPercent(mainDisk.use)
+      percent: formatPercent(mainDisk.use),
+      read:    diskIO?.rIO_sec ?? 0,
+      write:   diskIO?.wIO_sec ?? 0
     },
 
     network: {

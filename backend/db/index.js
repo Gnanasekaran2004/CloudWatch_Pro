@@ -1,6 +1,2 @@
-export {
-  openDb,
-  insertSnapshot,
-  queryHistory,
-  deleteOldRows
-} from './metrics.js'
+export { openDb, insertSnapshot, queryHistory,
+         deleteOldRows, getDbStats } from './metrics.js'
