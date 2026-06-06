@@ -3,7 +3,10 @@ import { Server } from 'socket.io'
 export const createSocketServer = (httpServer, monitor) => {
   const io = new Server(httpServer, {
     cors: {
-      origin: ['http://localhost:5173', 'null'],
+      origin: [
+        'http://localhost:5173',
+        process.env.FRONTEND_URL
+      ].filter(Boolean),
       methods: ['GET', 'POST']
     }
   })

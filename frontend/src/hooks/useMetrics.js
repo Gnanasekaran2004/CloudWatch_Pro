@@ -9,7 +9,7 @@ export const useMetrics = () => {
   const socketRef = useRef(null)
 
   useEffect(() => {
-    const socket = io('http://localhost:3000', {
+    const socket = io(import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000', {
       reconnection:          true,
       reconnectionDelay:     1000,
       reconnectionAttempts:  10
