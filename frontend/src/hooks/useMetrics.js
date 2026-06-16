@@ -1,15 +1,24 @@
 import { useState, useEffect, useRef } from 'react'
 import { io } from 'socket.io-client'
+import { getToken } from '../api/client'
 
 export const useMetrics = () => {
   const [metrics,   setMetrics]   = useState(null)
   const [connected, setConnected] = useState(false)
   const [error,     setError]     = useState(null)
-
   const socketRef = useRef(null)
 
   useEffect(() => {
-    const socket = io(import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000', {
+    const token = getToken()
+
+    if (!token) {
+      setConnected(false)
+      return
+    }
+
+    const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000'
+    const socket = io(backendUrl, {
+      auth: { token },
       reconnection:          true,
       reconnectionDelay:     1000,
       reconnectionAttempts:  10
@@ -25,10 +34,12 @@ export const useMetrics = () => {
     socket.on('disconnect', (reason) => {
       setConnected(false)
     })
-
     socket.on('connect_error', (err) => {
       setConnected(false)
-      setError(`Connection failed: ${err.message}`)
+      const isAuthError = err.message.includes('Authentication') || err.message.includes('Invalid')
+      if (!isAuthError) {
+        setError(`Connection failed: ${err.message}`)
+      }
     })
 
     socket.on('metrics', (data) => {
@@ -42,9 +53,9 @@ export const useMetrics = () => {
     }
   }, [])
 
-  const subscribe    = (metric) => socketRef.current?.emit('subscribe', metric)
-  const resetSubscribe = ()     => socketRef.current?.emit('subscribe', null)
-  const changeInterval = (ms)  => socketRef.current?.emit('set-interval', ms)
+  const subscribe       = (metric) => socketRef.current?.emit('subscribe', metric)
+  const resetSubscribe  = ()       => socketRef.current?.emit('subscribe', null)
+  const changeInterval  = (ms)     => socketRef.current?.emit('set-interval', ms)
 
-  return { metrics, connected, error, subscribe, resetSubscribe, changeInterval }
+  return { metrics, connected, error, subscribe, resetSubscribe, changeInterval, socketRef }
 }

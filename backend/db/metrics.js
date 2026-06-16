@@ -26,7 +26,58 @@ export const openDb = () => {
   `)
 
   console.log('  ✓ SQLite database opened:', DB_PATH)
-  return db
+
+
+  db.exec(`
+  CREATE TABLE IF NOT EXISTS alerts (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    timestamp       INTEGER NOT NULL,
+    severity        TEXT    DEFAULT 'medium',
+    title           TEXT    NOT NULL,
+    message         TEXT    NOT NULL,
+    suggested_action TEXT,
+    cpu             REAL    DEFAULT 0,
+    memory          REAL    DEFAULT 0,
+    disk            REAL    DEFAULT 0
+  )
+`)
+
+db.exec(`
+  CREATE INDEX IF NOT EXISTS idx_alerts_timestamp ON alerts (timestamp)
+`)
+
+console.log('  ✓ Alerts table ready')
+db.exec(`
+  CREATE TABLE IF NOT EXISTS settings (
+    key   TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+  )
+`)
+db.exec(`
+  CREATE TABLE IF NOT EXISTS users (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    username      TEXT    UNIQUE NOT NULL,
+    password_hash TEXT    NOT NULL,
+    role          TEXT    DEFAULT 'viewer',
+    created_at    INTEGER DEFAULT (strftime('%s','now') * 1000)
+  )
+`)
+
+console.log('  ✓ Users table ready')
+const defaults = [
+  { key: 'threshold_cpu',    value: '85' },
+  { key: 'threshold_memory', value: '90' },
+  { key: 'threshold_disk',   value: '95' },
+  { key: 'cooldown_seconds', value: '60' }
+]
+
+const insertSetting = db.prepare(`
+  INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)
+`)
+defaults.forEach(({ key, value }) => insertSetting.run(key, value))
+
+console.log('  ✓ Settings table ready')
+return db
 }
 
 export const insertSnapshot = (snapshot) => {

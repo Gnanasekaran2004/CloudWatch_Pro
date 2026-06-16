@@ -1,15 +1,12 @@
+import { cn } from '../utils/cn'
 
-function Skeleton({ width = '100%', height = '1rem', borderRadius = '4px' }) {
-  return (
-    <div style={{
-      width,
-      height,
-      borderRadius,
-      background:  'var(--bg-hover)',
-      animation:   'pulse 1.5s ease-in-out infinite'
-    }} />
-  )
+function Skeleton({ className = '' }) {
+    return (
+        <div className={cn(
+            'bg-slate-700 rounded animate-pulse',
+            className
+        )} />
+    )
 }
-
 
 export default Skeleton

@@ -1,7 +1,7 @@
 import si from 'systeminformation'
 import { safeFetch } from './fetcher.js'
 
-const KNOWN_PORTS = {
+export const KNOWN_PORTS = {
   21:   'FTP',
   22:   'SSH',
   23:   'Telnet',

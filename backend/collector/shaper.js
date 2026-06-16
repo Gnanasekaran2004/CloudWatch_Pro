@@ -1,5 +1,7 @@
 import { formatPercent } from '../utils/index.js'
 
+import { KNOWN_PORTS } from '../collector/ports.js' 
+
 export const shapeSnapshot = (rawData) => {
   const { cpuLoad, mem, disk, net, procs, conns, diskIO } = rawData
 
@@ -20,12 +22,15 @@ export const shapeSnapshot = (rawData) => {
   ;(conns || [])
     .filter(c => c.state === 'LISTEN')
     .forEach(c => {
-      const key = `${c.localPort}-${c.protocol}-${c.pid}`
+      const portNum = parseInt(c.localPort, 10)
+      const key = `${portNum}-${c.protocol}-${c.pid}`
+      
       if (!portMap.has(key)) {
         portMap.set(key, {
-          port:     parseInt(c.localPort, 10),
+          port:     portNum,
           protocol: c.protocol,
-          pid:      c.pid
+          pid:      c.pid,
+          label:    KNOWN_PORTS[portNum] || null 
         })
       }
     })

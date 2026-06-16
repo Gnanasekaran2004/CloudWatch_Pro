@@ -1,17 +1,23 @@
 import { useState, useMemo, useCallback, memo } from 'react'
+import { cn } from '../utils/cn'
 
-const MemoPortRow = memo(({ port, label, protocol }) => (
-  <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr 1fr',
-                padding: '0.75rem 1rem', borderBottom: '1px solid var(--border)',
-                fontSize: '14px', alignItems: 'center' }}>
-    <div style={{ fontWeight: '500', color: 'var(--blue)' }}>{port}</div>
-    <div style={{ color: label ? 'var(--text-primary)' : 'var(--text-muted)',
-                  fontStyle: label ? 'normal' : 'italic' }}>
+const portColor = (port) => {
+  if ([80, 443].includes(port))             return 'text-green-400 border-green-800'
+  if ([3000, 5173, 8080].includes(port))    return 'text-yellow-400 border-yellow-800'
+  if ([22, 21].includes(port))              return 'text-red-400 border-red-800'
+  return 'text-blue-400 border-blue-900'
+}
+
+const MemoPortRow = memo(({ port, label, protocol, pid }) => (
+  <div className="grid grid-cols-[80px_1fr_80px_80px] px-4 py-3
+                  border-b border-slate-700 text-sm
+                  hover:bg-slate-700/50 transition-colors">
+    <div className={cn('font-mono font-bold', portColor(port))}>:{port}</div>
+    <div className={cn('text-sm', label ? 'text-slate-200' : 'text-slate-500 italic')}>
       {label || 'unknown'}
     </div>
-    <div style={{ fontSize: '12px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-      {protocol || 'tcp'}
-    </div>
+    <div className="text-xs text-slate-400 uppercase">{protocol || 'tcp'}</div>
+    <div className="text-xs text-slate-500">PID {pid}</div>
   </div>
 ))
 
@@ -19,108 +25,108 @@ function PortsList({ ports = [], loading }) {
   const [filter, setFilter] = useState('')
   const [copied, setCopied] = useState(false)
 
-  const handleFilter = useCallback((e) => {
-    setFilter(e.target.value)
-  }, [])
-  const filteredPorts = useMemo(() => {
-    return ports.filter(p => filter ? String(p.port).includes(filter) : true)
-  }, [ports, filter])
+  const handleFilter = useCallback(e => setFilter(e.target.value), [])
+
+  const filteredPorts = useMemo(() =>
+    ports.filter(p => filter ? String(p.port).includes(filter) : true),
+    [ports, filter]
+  )
 
   const stats = useMemo(() => ({
     total:   ports.length,
     known:   ports.filter(p => p.label).length,
     unknown: ports.filter(p => !p.label).length
   }), [ports])
+
   const copyPorts = useCallback(() => {
     if (!ports.length) return
-    const portString = ports.map(p => p.port).join(', ')
-    navigator.clipboard.writeText(portString)
+    navigator.clipboard.writeText(ports.map(p => p.port).join(', '))
     setCopied(true)
-    
-    const timer = setTimeout(() => setCopied(false), 2000)
-    return () => clearTimeout(timer) 
+    const t = setTimeout(() => setCopied(false), 2000)
+    return () => clearTimeout(t)
   }, [ports])
 
   return (
-    <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)',
-                  borderRadius: '12px', padding: '1.5rem', marginBottom: '1.5rem' }}>
+    <div className="bg-slate-800 border border-slate-700 rounded-xl p-6 mb-4">
 
-      <div style={{ display: 'flex', justifyContent: 'space-between',
-                    alignItems: 'center', marginBottom: '1rem',
-                    flexWrap: 'wrap', gap: '0.75rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <h2 style={{ fontSize: '18px' }}>Active Ports</h2>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-3 flex-wrap gap-3">
+        <div className="flex items-center gap-3">
+          <h2 className="text-lg font-semibold text-slate-100">Active Ports</h2>
+          <span className="bg-slate-700 text-slate-400 text-xs font-bold
+                           px-2 py-0.5 rounded-full">
+            {ports.length}
+          </span>
         </div>
-        
-        <button 
-          onClick={copyPorts} 
-          disabled={ports.length === 0}
-          style={{
-            padding: '4px 12px', fontSize: '12px', fontWeight: '500',
-            background: copied ? 'var(--green, #10b981)' : 'var(--bg-hover)',
-            color: copied ? '#ffffff' : 'var(--text-primary)',
-            border: '1px solid var(--border)', borderRadius: '6px', 
-            cursor: ports.length ? 'pointer' : 'not-allowed',
-            opacity: ports.length ? 1 : 0.5,
-            transition: 'all 0.2s ease'
-          }}
-        >
+        <button
+          onClick={copyPorts}
+          disabled={!ports.length}
+          className={cn(
+            'px-3 py-1.5 text-xs font-medium rounded-md border transition-all',
+            copied
+              ? 'bg-green-500 text-white border-green-500'
+              : 'bg-slate-700 text-slate-300 border-slate-600 hover:bg-slate-600',
+            !ports.length && 'opacity-50 cursor-not-allowed'
+          )}>
           {copied ? '✓ Copied!' : 'Copy all'}
         </button>
       </div>
 
+      {/* Stats */}
       {ports.length > 0 && (
-        <div style={{ display: 'flex', gap: '0.5rem', fontSize: '12px',
-                      color: 'var(--text-muted)', marginBottom: '0.75rem',
-                      paddingLeft: '0.25rem', alignItems: 'center' }}>
+        <div className="flex gap-3 text-xs text-slate-500 mb-3">
           <span>{stats.total} total</span>
-          <span>•</span>
-          <span>{stats.known} known</span>
-          <span>•</span>
+          <span>·</span>
+          <span className="text-green-500">{stats.known} known</span>
+          <span>·</span>
           <span>{stats.unknown} unknown</span>
         </div>
       )}
 
+      {/* Filter */}
       <input
         type="text"
         placeholder="Filter by port number..."
         value={filter}
         onChange={handleFilter}
-        style={{
-          width: '100%', padding: '8px 12px', marginBottom: '1rem',
-          background: 'var(--bg-primary)', fontSize: '14px',
-          border: `1px solid ${filter ? 'var(--blue)' : 'var(--border)'}`,
-          borderRadius: '8px', color: 'var(--text-primary)', outline: 'none'
-        }}
+        className={cn(
+          'w-full px-3 py-2 mb-4 text-sm rounded-lg outline-none transition-colors',
+          'bg-slate-900 text-slate-200 placeholder-slate-500 border',
+          filter ? 'border-blue-400' : 'border-slate-600',
+          'focus:border-blue-400'
+        )}
       />
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr 1fr',
-                    padding: '0.5rem 1rem', borderBottom: '2px solid var(--border)',
-                    fontSize: '12px', color: 'var(--text-muted)',
-                    textTransform: 'uppercase', fontWeight: 'bold' }}>
+      {/* Column headers */}
+      <div className="grid grid-cols-[80px_1fr_80px_80px] px-4 py-2
+                      border-b-2 border-slate-600
+                      text-xs text-slate-400 uppercase font-bold tracking-wider">
         <div>Port</div>
-        <div>Service Label</div>
+        <div>Service</div>
         <div>Protocol</div>
+        <div>PID</div>
       </div>
 
+      {/* Rows */}
       {loading
-        ? [1, 2, 3].map(i => (
-            <div key={i} style={{ padding: '0.75rem 1rem', borderBottom: '1px solid var(--border)' }}>
-              <div style={{ height: '14px', background: 'var(--bg-hover)',
-                            borderRadius: '4px', animation: 'pulse 1.5s infinite' }} />
+        ? [1,2,3].map(i => (
+            <div key={i} className="px-4 py-3 border-b border-slate-700">
+              <div className="h-3.5 bg-slate-700 rounded animate-pulse" />
             </div>
           ))
         : filteredPorts.length === 0
-          ? <div style={{ padding: '2rem', textAlign: 'center',
-                          color: 'var(--text-muted)', fontSize: '14px' }}>
+          ? (
+            <div className="py-8 text-center text-sm text-slate-500">
               {filter ? `No ports matching "${filter}"` : 'No active ports'}
             </div>
+          )
           : filteredPorts.map(p => (
               <MemoPortRow
                 key={`${p.port}-${p.protocol || 'tcp'}`}
                 port={p.port}
                 label={p.label}
                 protocol={p.protocol}
+                pid={p.pid}
               />
             ))
       }

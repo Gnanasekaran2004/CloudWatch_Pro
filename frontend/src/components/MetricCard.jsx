@@ -1,45 +1,36 @@
+import { cn } from '../utils/cn'
 
 function MetricCard({ label, value, unit, percent }) {
 
-  const getColor = (pct) => {
-    if (!pct && pct !== 0) return 'var(--text-primary)'
-    if (pct > 80) return 'var(--red)'
-    if (pct > 60) return 'var(--yellow)'
-    return 'var(--green)'
-  }
+  const color = cn({
+    'text-green-400':  !percent || percent < 60,
+    'text-yellow-400':  percent >= 60 && percent < 80,
+    'text-red-400':     percent >= 80,
+  })
 
-  const color = getColor(percent)
+  const barColor = cn({
+    'bg-green-400':  !percent || percent < 60,
+    'bg-yellow-400':  percent >= 60 && percent < 80,
+    'bg-red-400':     percent >= 80,
+  })
 
   return (
-    <div style={{
-      background:   'var(--bg-card)',
-      border:       '1px solid var(--border)',
-      borderRadius: '12px',
-      padding:      '1.5rem',
-    }}>
-      <div style={{ color: 'var(--text-muted)', fontSize: '12px',
-                    textTransform: 'uppercase', letterSpacing: '0.05em',
-                    marginBottom: '0.5rem' }}>
+    <div className="bg-slate-800 border border-slate-700 rounded-xl p-5">
+      <div className="text-xs text-slate-400 uppercase tracking-wider mb-2">
         {label}
       </div>
-
-      <div style={{ fontSize: '2rem', fontWeight: 'bold',
-                    color, lineHeight: 1 }}>
+      <div className={cn('text-3xl font-bold leading-none', color)}>
         {value ?? '--'}
-        {unit && <span style={{ fontSize: '1rem', marginLeft: '4px',
-                                color: 'var(--text-muted)' }}>{unit}</span>}
+        {unit && (
+          <span className="text-base ml-1 text-slate-400">{unit}</span>
+        )}
       </div>
-
       {percent !== undefined && (
-        <div style={{ marginTop: '0.75rem', background: 'var(--bg-primary)',
-                      borderRadius: '4px', height: '4px', overflow: 'hidden' }}>
-          <div style={{
-            width:        `${Math.min(percent, 100)}%`,
-            height:       '100%',
-            background:   color,
-            borderRadius: '4px',
-            transition:   'width 0.3s ease'
-          }} />
+        <div className="mt-3 bg-slate-900 rounded h-1 overflow-hidden">
+          <div
+            className={cn('h-full rounded transition-all duration-300', barColor)}
+            style={{ width: `${Math.min(percent, 100)}%` }}
+          />
         </div>
       )}
     </div>

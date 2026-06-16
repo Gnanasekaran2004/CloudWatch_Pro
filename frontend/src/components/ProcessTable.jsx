@@ -1,30 +1,36 @@
-import { useState, useMemo, useCallback, memo, useRef, useEffect } from 'react'
+import { useState, useMemo, useCallback, memo } from 'react'
+import { cn } from '../utils/cn'
 import ProcessRow from './ProcessRow'
 
-const MemoProcessRow = memo(ProcessRow)
+const SortButton = memo(({ active, onClick, label }) => (
+  <button
+    onClick={onClick}
+    className={cn(
+      'px-3 py-1 text-xs font-semibold rounded-md border transition-colors cursor-pointer',
+      active
+        ? 'bg-blue-400 text-slate-900 border-blue-400'
+        : 'bg-slate-700 text-slate-300 border-slate-600 hover:bg-slate-600'
+    )}>
+    {label}
+  </button>
+))
 
 function ProcessTable({ processes = [], loading }) {
   const [sortBy,  setSortBy]  = useState('cpu')
   const [search,  setSearch]  = useState('')
   const [showAll, setShowAll] = useState(false)
 
-  const tableRef = useRef(null)
-  
-  const currentTopPid = processes[0]?.pid
-  const prevTopPidRef = useRef(currentTopPid)
+  const sortByCpu    = useCallback(() => setSortBy('cpu'), [])
+  const sortByMem    = useCallback(() => setSortBy('mem'), [])
+  const toggleAll    = useCallback(() => setShowAll(v => !v), [])
+  const handleSearch = useCallback(e => setSearch(e.target.value), [])
 
-  useEffect(() => {
-    if (currentTopPid !== prevTopPidRef.current) {
-      if (tableRef.current) {
-        tableRef.current.scrollTop = 0
-      }
-      prevTopPidRef.current = currentTopPid
-    }
-  }, [currentTopPid])
-
-  const sortByCpu = useCallback(() => setSortBy('cpu'), [])
-  const sortByMem = useCallback(() => setSortBy('mem'), [])
-  const toggleShowAll = useCallback(() => setShowAll(v => !v), [])
+  const stats = useMemo(() => {
+    if (!processes.length) return null
+    const totalCpu = processes.reduce((s, p) => s + p.cpu, 0)
+    const top      = processes.reduce((t, p) => p.cpu > t.cpu ? p : t)
+    return { totalCpu: totalCpu.toFixed(1), topName: top.name }
+  }, [processes])
 
   const filtered = useMemo(() => {
     let list = [...processes]
@@ -39,125 +45,91 @@ function ProcessTable({ processes = [], loading }) {
     return showAll ? list : list.slice(0, 10)
   }, [processes, sortBy, search, showAll])
 
-  const stats = useMemo(() => {
-    if (!processes.length) return null
-    const totalCpu = processes.reduce((sum, p) => sum + p.cpu, 0)
-    const totalMem = processes.reduce((sum, p) => sum + p.mem, 0)
-    const topCpu   = processes.reduce((top, p) => p.cpu > top.cpu ? p : top)
-    return {
-      totalCpu: totalCpu.toFixed(1),
-      totalMem: totalMem.toFixed(1),
-      topName:  topCpu.name
-    }
-  }, [processes])
-
-  const handleSearch = useCallback((e) => {
-    setSearch(e.target.value)
-  }, [])
-
   return (
-    <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)',
-                  borderRadius: '12px', padding: '1.5rem', marginBottom: '1.5rem' }}>
+    <div className="bg-slate-800 border border-slate-700 rounded-xl p-6 mb-4">
 
-      <div style={{ display: 'flex', justifyContent: 'space-between',
-                    alignItems: 'center', marginBottom: '1rem',
-                    flexWrap: 'wrap', gap: '0.75rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <h2 style={{ fontSize: '18px' }}>Processes</h2>
-          <span style={{ background: 'var(--bg-hover)', color: 'var(--text-muted)',
-                         padding: '2px 8px', borderRadius: '12px',
-                         fontSize: '13px', fontWeight: 'bold' }}>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+        <div className="flex items-center gap-3">
+          <h2 className="text-lg font-semibold text-slate-100">Processes</h2>
+          <span className="bg-slate-700 text-slate-400 text-xs font-bold
+                           px-2 py-0.5 rounded-full">
             {processes.length}
           </span>
+          {stats && (
+            <span className="text-xs text-slate-500 hidden sm:block">
+              Total CPU: <b className="text-slate-300">{stats.totalCpu}%</b>
+              {' · '}Top: <b className="text-yellow-400">{stats.topName}</b>
+            </span>
+          )}
         </div>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
+        <div className="flex gap-2">
           <SortButton active={sortBy === 'cpu'} onClick={sortByCpu} label="CPU" />
           <SortButton active={sortBy === 'mem'} onClick={sortByMem} label="MEM" />
         </div>
       </div>
 
-      {stats && (
-        <div style={{ display: 'flex', gap: '1.5rem', fontSize: '12px',
-                      color: 'var(--text-muted)', marginBottom: '0.75rem',
-                      paddingLeft: '0.25rem' }}>
-          <span>Total CPU: <strong style={{ color: 'var(--text-primary)' }}>{stats.totalCpu}%</strong></span>
-          <span>Total MEM: <strong style={{ color: 'var(--text-primary)' }}>{stats.totalMem}%</strong></span>
-          <span>Top: <strong style={{ color: 'var(--yellow)' }}>{stats.topName}</strong></span>
-        </div>
-      )}
-
+      {/* Search */}
       <input
         type="text"
-        placeholder="Search by name or PID..."
+        placeholder="Search by name or PID...  (press / to focus)"
         value={search}
         onChange={handleSearch}
-        style={{
-          width: '100%', padding: '8px 12px', marginBottom: '1rem',
-          background: 'var(--bg-primary)', fontSize: '14px',
-          border: `1px solid ${search ? 'var(--blue)' : 'var(--border)'}`,
-          borderRadius: '8px', color: 'var(--text-primary)', outline: 'none'
-        }}
+        className={cn(
+          'w-full px-3 py-2 mb-4 text-sm rounded-lg outline-none transition-colors',
+          'bg-slate-900 text-slate-200 placeholder-slate-500',
+          'border',
+          search ? 'border-blue-400' : 'border-slate-600',
+          'focus:border-blue-400'
+        )}
       />
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr 1fr 1fr',
-                    padding: '0.5rem 1rem', borderBottom: '2px solid var(--border)',
-                    fontSize: '12px', color: 'var(--text-muted)',
-                    textTransform: 'uppercase', fontWeight: 'bold' }}>
+      {/* Column headers */}
+      <div className="grid grid-cols-[1fr_2fr_1fr_1fr] px-4 py-2
+                      border-b-2 border-slate-600
+                      text-xs text-slate-400 uppercase font-bold tracking-wider">
         <div>PID</div>
         <div>Name</div>
-        <div style={{ color: sortBy === 'cpu' ? 'var(--blue)' : 'inherit' }}>CPU</div>
-        <div style={{ color: sortBy === 'mem' ? 'var(--blue)' : 'inherit' }}>MEM</div>
+        <div className={cn(sortBy === 'cpu' ? 'text-blue-400' : '')}>CPU</div>
+        <div className={cn(sortBy === 'mem' ? 'text-blue-400' : '')}>MEM</div>
       </div>
 
-      <div ref={tableRef} style={{ maxHeight: '400px', overflowY: 'auto' }}>
-        {loading
-          ? [1,2,3,4,5].map(i => (
-              <div key={i} style={{ padding: '0.75rem 1rem',
-                                    borderBottom: '1px solid var(--border)' }}>
-                <div style={{ height: '14px', background: 'var(--bg-hover)',
-                              borderRadius: '4px', animation: 'pulse 1.5s infinite' }} />
-              </div>
+      {/* Rows */}
+      {loading
+        ? [1,2,3,4,5].map(i => (
+            <div key={i} className="px-4 py-3 border-b border-slate-700">
+              <div className="h-3.5 bg-slate-700 rounded animate-pulse" />
+            </div>
+          ))
+        : filtered.length === 0
+          ? (
+            <div className="py-10 text-center text-sm text-slate-500">
+              {search ? `No processes matching "${search}"` : 'No processes'}
+            </div>
+          )
+          : filtered.map(proc => (
+              <ProcessRow
+                key={proc.pid}
+                pid={proc.pid}
+                name={proc.name}
+                cpu={proc.cpu}
+                mem={proc.mem}
+              />
             ))
-          : filtered.length === 0
-            ? <div style={{ padding: '2rem', textAlign: 'center',
-                            color: 'var(--text-muted)', fontSize: '14px' }}>
-                {search ? `No processes matching "${search}"` : 'No processes'}
-              </div>
-            : filtered.map(proc => (
-                <MemoProcessRow
-                  key={proc.pid}
-                  pid={proc.pid}
-                  name={proc.name}
-                  cpu={proc.cpu}
-                  mem={proc.mem}
-                />
-              ))
-        }
-      </div>
+      }
 
+      {/* Show more */}
       {!loading && !search && processes.length > 10 && (
-        <button onClick={toggleShowAll} style={{
-          marginTop: '0.75rem', padding: '6px 16px', width: '100%',
-          background: 'var(--bg-hover)', color: 'var(--text-muted)',
-          border: '1px solid var(--border)', borderRadius: '8px',
-          cursor: 'pointer', fontSize: '13px'
-        }}>
+        <button
+          onClick={toggleAll}
+          className="mt-3 w-full py-2 text-xs text-slate-400
+                     bg-slate-700 hover:bg-slate-600 border border-slate-600
+                     rounded-lg cursor-pointer transition-colors">
           {showAll ? 'Show less ↑' : `Show all ${processes.length} processes ↓`}
         </button>
       )}
     </div>
   )
 }
-
-const SortButton = memo(({ active, onClick, label }) => (
-  <button onClick={onClick} style={{
-    padding: '4px 10px', fontSize: '12px', fontWeight: '500',
-    background: active ? 'var(--blue)' : 'var(--bg-hover)',
-    color:      active ? '#0f172a'     : 'var(--text-primary)',
-    border: '1px solid var(--border)', borderRadius: '6px', cursor: 'pointer'
-  }}>
-    {label}
-  </button>
-))
 
 export default ProcessTable

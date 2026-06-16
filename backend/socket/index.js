@@ -1,18 +1,31 @@
 import { Server } from 'socket.io'
+import jwt from 'jsonwebtoken'
 
 export const createSocketServer = (httpServer, monitor) => {
   const io = new Server(httpServer, {
     cors: {
-      origin: [
-        'http://localhost:5173',
-        process.env.FRONTEND_URL
-      ].filter(Boolean),
+      origin:  process.env.CORS_ORIGIN || 'http://localhost:5173',
       methods: ['GET', 'POST']
     }
   })
+  io.use((socket, next) => {
+    const token = socket.handshake.auth?.token
 
+    if (!token) {
+      return next(new Error('Authentication required'))
+    }
+
+    try {
+      const payload   = jwt.verify(token, process.env.JWT_SECRET)
+      socket.user     = payload
+      next()
+    } catch (err) {
+      next(new Error('Invalid or expired token'))
+    }
+  })
+ 
   io.on('connection', (socket) => {
-    console.log(`[WS] Client connected:    ${socket.id}`)
+    console.log(`[WS] Client connected: ${socket.id} (user: ${socket.user?.username})`)
 
     let subscribedMetric = null
     let clientIntervalMs = null

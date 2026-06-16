@@ -1,28 +1,24 @@
-function ProcessRow({ pid, name, cpu, mem }) {
-  
-  const getCpuColor = (val) => {
-    if (val > 80) return 'var(--red)';
-    if (val > 40) return 'var(--yellow)';
-    return 'var(--green)';
-  };
+import { memo } from 'react'
+import { cn }   from '../utils/cn'
 
-  const rowStyle = {
-    display: 'grid',
-    gridTemplateColumns: '1fr 2fr 1fr 1fr',
-    padding: '0.75rem 1rem',
-    borderBottom: '1px solid var(--border)',
-    fontSize: '14px',
-    color: 'var(--text-primary)'
-  };
+const ProcessRow = memo(function ProcessRow({ pid, name, cpu, mem }) {
+
+  const cpuColor = cn({
+    'text-green-400':  cpu < 40,
+    'text-yellow-400': cpu >= 40 && cpu < 80,
+    'text-red-400':    cpu >= 80,
+  })
 
   return (
-    <div style={rowStyle}>
-      <div style={{ color: 'var(--text-muted)' }}>{pid}</div>
-      <div style={{ fontWeight: '500' }}>{name}</div>
-      <div style={{ color: getCpuColor(cpu), fontWeight: 'bold' }}>{cpu}%</div>
-      <div>{mem}%</div>
+    <div className="grid grid-cols-[1fr_2fr_1fr_1fr] px-4 py-3
+                    border-b border-slate-700 text-sm
+                    hover:bg-slate-700/50 transition-colors">
+      <div className="text-slate-400">{pid}</div>
+      <div className="font-medium text-slate-200 truncate pr-2">{name}</div>
+      <div className={cn('font-bold', cpuColor)}>{cpu}%</div>
+      <div className="text-slate-300">{mem}%</div>
     </div>
-  );
-}
+  )
+})
 
-export default ProcessRow;
+export default ProcessRow

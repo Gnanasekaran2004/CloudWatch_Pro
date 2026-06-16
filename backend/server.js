@@ -1,16 +1,26 @@
+import 'dotenv/config'
+import { adminRouter } from './routes/admin.js'
 import express          from 'express'
 import { createServer } from 'http'
 import cors             from 'cors'
 import { openDb, insertSnapshot,
          deleteOldRows, getDbStats } from './db/index.js'
 import { MetricsEmitter }          from './collector/index.js'
-import { requestLogger, rateLimit,
-         errorHandler }            from './middleware/index.js'
 import { historyRouter,
          createMetricsRouter,
          createProcessesRouter,
          createPortsRouter }       from './routes/index.js'
 import { createSocketServer }      from './socket/index.js'
+import { AnomalyDetector }         from './services/anomalyDetector.js'
+import { insertAlert, queryAlerts,
+         deleteAlert, getAlertCount,
+         setDb }                   from './db/alerts.js'
+import { getAllSettings, updateSetting,
+         getThresholds, setSettingsDb } from './db/index.js'
+import { createSettingsRouter } from './routes/settings.js'
+import { createUser, getUserCount, setDb as setUsersDb } from './db/users.js'
+import { authRouter } from './routes/auth.js'
+import { requestLogger, rateLimit, errorHandler, requireAuth } from './middleware/index.js'
 
 const app     = express()
 const server  = createServer(app)   
@@ -18,6 +28,7 @@ const PORT    = process.env.PORT || 3000
 const monitor = new MetricsEmitter(1000)
 let isShuttingDown = false
 let insertCount = 0
+let isAnalyzing = false
 
 const allowedOrigins = [
   'http://localhost:5173',
@@ -29,19 +40,71 @@ app.use(express.json())
 app.use(requestLogger)
 app.use(rateLimit({ windowMs: 60000, max: 200 }))
 
-openDb()
+const dbInstance = openDb()
+setDb(dbInstance)
+setSettingsDb(dbInstance)
+setUsersDb(dbInstance)
 
+if (getUserCount() === 0) {
+  await createUser('admin', 'admin123', 'admin')
+  console.log('  ✓ Admin user seeded (username: admin, password: admin123)')
+  console.log('  ⚠ Change the password after first login!')
+}
+
+const detector     = new AnomalyDetector()
+const recentHistory = [] 
+const thresholds = getThresholds()
+detector.setThresholds(thresholds)
+console.log(`  ✓ Thresholds loaded: CPU>${thresholds.cpu}% MEM>${thresholds.memory}% DISK>${thresholds.disk}%`)
+
+app.use('/api/auth', authRouter)
+app.use('/api/health', (req, res) => res.redirect('/api/metrics/health'))
+
+app.use('/api', requireAuth)
+app.use('/api/admin', adminRouter)
 app.use('/api/metrics',   createMetricsRouter(monitor))
-app.use('/api/health',    (req, res) => res.redirect('/api/metrics/health'))
 app.use('/api/processes', createProcessesRouter(monitor))
 app.use('/api/ports',     createPortsRouter(monitor))
 app.use('/api/history',   historyRouter)
+app.use('/api/settings',  createSettingsRouter(detector))
+
+app.get('/api/alerts', (req, res) => {
+  const limit = parseInt(req.query.limit) || 50
+  res.json(queryAlerts(limit))
+})
+
+app.get('/api/alerts/count', (req, res) => {
+  res.json(getAlertCount())
+})
+
+app.delete('/api/alerts/:id', (req, res) => {
+  deleteAlert(parseInt(req.params.id))
+  res.json({ success: true })
+})
+
+app.get('/api/ai/stats', (req, res) => {
+  res.json(detector.getStats())
+})
+
+app.get('/api/ai/test', async (req, res) => {
+  const testSnapshot = {
+    cpu:     { percent: 94.2 },
+    memory:  { percent: 87.4, used: 14200000000, total: 16000000000 },
+    disk:    { percent: 75.1 },
+    network: { rx_sec: 52000000, tx_sec: 1200000 }
+  }
+
+  try {
+    const alert = await detector.analyze(testSnapshot, [])
+    res.json({ alert, stats: detector.getStats() })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
 
 app.get('/api/db/stats', (req, res) => {
   res.json(getDbStats())
 })
-
-const io = createSocketServer(server, monitor)
 
 app.get('/api/socket-stats', (req, res) => {
   const sockets   = io.sockets.sockets
@@ -68,12 +131,34 @@ app.use((req, res, next) => {
 
 app.use(errorHandler)
 
+const io = createSocketServer(server, monitor)
 monitor.start()
 
-monitor.on('snapshot', (data) => {
+monitor.on('snapshot', async (data) => {
+  const snapshotCopy = JSON.parse(JSON.stringify(data))
+
+  recentHistory.push(snapshotCopy)
+  if (recentHistory.length > 10) recentHistory.shift()
+
   insertCount++
   if (insertCount % 5 === 0) {
-    insertSnapshot(data)
+    insertSnapshot(snapshotCopy)
+  }
+
+  if (isAnalyzing) return
+
+  try {
+    isAnalyzing = true
+    const alert = await detector.analyze(snapshotCopy, [...recentHistory])
+    if (alert) {
+      insertAlert(alert)
+      io.emit('alert', alert)   
+      console.log(`[ALERT] ${alert.severity.toUpperCase()}: ${alert.title}`)
+    }
+  } catch (err) {
+    console.error('[Pipeline] Operational error analyzing system telemetry:', err.message)
+  } finally {
+    isAnalyzing = false
   }
 })
 
