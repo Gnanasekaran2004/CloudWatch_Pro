@@ -1,29 +1,18 @@
 # Dependencies
 node_modules/
-**/node_modules/
 
 # Environment files
 .env
-.env.local
-.env.*.local
+backend/.env
 
-# Build outputs
-dist/
-build/
+# Database files
+*.db
+*.db-journal
+data/
 
-# Logs
-*.log
-npm-debug.log*
+# Build output
+frontend/dist/
 
 # OS files
 .DS_Store
 Thumbs.db
-
-# IDE
-.vscode/
-.idea/
-
-# SQLite database (runtime data, not source)
-*.db
-*.db-shm
-*.db-wal

@@ -1,9 +1,9 @@
 import Database from 'better-sqlite3'
 import path     from 'path'
 
-const DB_PATH = path.join(process.cwd(), 'metrics.db')
 let   db      = null
-
+const DATA_DIR = process.env.DATA_DIR || process.cwd()
+const DB_PATH  = path.join(DATA_DIR, 'metrics.db')
 export const openDb = () => {
   db = new Database(DB_PATH)
 
