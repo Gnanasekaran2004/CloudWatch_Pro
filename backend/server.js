@@ -30,12 +30,26 @@ let isShuttingDown = false
 let insertCount = 0
 let isAnalyzing = false
 
-const allowedOrigins = [
-  'http://localhost:5173',
-  process.env.FRONTEND_URL
-].filter(Boolean)
+// Dynamic CORS configuration accepting flexible strings and credentials
+app.use(cors({
+  origin: (origin, callback) => {
+    const allowed = [
+      process.env.CORS_ORIGIN,
+      process.env.CORS_ORIGIN?.replace(/\/$/, ''),  // remove trailing slash
+      'http://localhost:5173',
+      'http://localhost:4000'
+    ].filter(Boolean)
 
-app.use(cors({ origin: allowedOrigins }))
+    if (!origin || allowed.includes(origin)) {
+      callback(null, true)
+    } else {
+      console.log('[CORS] Blocked origin:', origin)
+      callback(new Error(`CORS blocked: ${origin}`))
+    }
+  },
+  credentials: true
+}))
+
 app.use(express.json())
 app.use(requestLogger)
 app.use(rateLimit({ windowMs: 60000, max: 200 }))
