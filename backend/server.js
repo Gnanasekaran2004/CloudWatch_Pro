@@ -58,9 +58,17 @@ detector.setThresholds(thresholds)
 console.log(`  ✓ Thresholds loaded: CPU>${thresholds.cpu}% MEM>${thresholds.memory}% DISK>${thresholds.disk}%`)
 
 app.use('/api/auth', authRouter)
-app.use('/api/health', (req, res) => res.redirect('/api/metrics/health'))
+
+app.get('/api/health', (req, res) => {
+  res.json({
+    status:  'ok',
+    uptime:  process.uptime(),
+    time:    new Date().toISOString()
+  })
+})
 
 app.use('/api', requireAuth)
+
 app.use('/api/admin', adminRouter)
 app.use('/api/metrics',   createMetricsRouter(monitor))
 app.use('/api/processes', createProcessesRouter(monitor))
