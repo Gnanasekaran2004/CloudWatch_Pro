@@ -2,20 +2,20 @@ import si from 'systeminformation'
 import { safeFetch } from './fetcher.js'
 
 export const KNOWN_PORTS = {
-  21:   'FTP',
-  22:   'SSH',
-  23:   'Telnet',
-  25:   'SMTP',
-  53:   'DNS',
-  80:   'HTTP',
-  443:  'HTTPS',
-  3000: 'Dev server',
-  3306: 'MySQL',
-  5173: 'Vite',
-  5432: 'PostgreSQL',
-  6379: 'Redis',
-  8080: 'HTTP alt',
-  27017:'MongoDB'
+  21:    'FTP',
+  22:    'SSH',
+  23:    'Telnet',
+  25:    'SMTP',
+  53:    'DNS',
+  80:    'HTTP',
+  443:   'HTTPS',
+  3000:  'Dev server',
+  3306:  'MySQL',
+  5173:  'Vite',
+  5432:  'PostgreSQL',
+  6379:  'Redis',
+  8080:  'HTTP alt',
+  27017: 'MongoDB'
 }
 
 export const getPorts = async ({ stateFilter = 'LISTEN' } = {}) => {
@@ -37,12 +37,12 @@ export const getPorts = async ({ stateFilter = 'LISTEN' } = {}) => {
 
     if (!portMap.has(key)) {
       portMap.set(key, {
-        port:      portNum,
-        protocol:  c.protocol,
-        state:     c.state,
-        pid:       c.pid,
-        label:     KNOWN_PORTS[portNum] || null,
-        isKnown:   Boolean(KNOWN_PORTS[portNum])
+        port:    portNum,
+        protocol: c.protocol,
+        state:   c.state,
+        pid:     c.pid,
+        label:   KNOWN_PORTS[portNum] || null,
+        isKnown: Boolean(KNOWN_PORTS[portNum])
       })
     }
   })
@@ -51,7 +51,7 @@ export const getPorts = async ({ stateFilter = 'LISTEN' } = {}) => {
     .sort((a, b) => a.port - b.port)
 
   return {
-    total:   ports.length,
+    total: ports.length,
     ports
   }
 }

@@ -18,7 +18,7 @@ export const safeFetch = async (fn, fallback, sourceName) => {
 export const fetchAllRaw = async () => {
   resetFailedSources()
 
-  const [cpuLoad, mem, disk, net, procs, conns] = await Promise.all([
+  const [cpuLoad, mem, disk, net, procs, conns, diskIO] = await Promise.all([
     safeFetch(() => si.currentLoad(),        { currentLoad: 0, cpus: [] }, 'cpu'),
     safeFetch(() => si.mem(),                { used: 0, total: 1, free: 0 }, 'memory'),
     safeFetch(() => si.fsSize(),             [], 'disk'),
@@ -28,5 +28,5 @@ export const fetchAllRaw = async () => {
     safeFetch(() => si.disksIO(), { rIO_sec: 0, wIO_sec: 0 }, 'disksIO')
   ])
 
-  return { cpuLoad, mem, disk, net, procs, conns }
+  return { cpuLoad, mem, disk, net, procs, conns, diskIO }
 }

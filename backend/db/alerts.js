@@ -1,5 +1,3 @@
-import Database from 'better-sqlite3'
-
 let db = null
 
 export const setDb = (database) => { db = database }

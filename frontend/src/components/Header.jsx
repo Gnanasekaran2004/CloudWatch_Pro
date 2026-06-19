@@ -13,21 +13,17 @@ function Header({
   connected, error, timestamp,
   subscribe, resetSubscribe, changeInterval,
   unreadCount = 0, onAlertsClick,
-  user, onLogout 
+  user, onLogout
 }) {
   const controls = CONTROLS(subscribe, resetSubscribe, changeInterval)
 
   return (
     <div className="mb-6">
-
-      {/* Title bar */}
       <div className="bg-slate-800 border border-slate-700 rounded-xl
                       px-6 py-4 flex items-center justify-between mb-2">
         <h1 className="text-2xl font-semibold text-slate-100">CloudWatch Pro</h1>
 
         <div className="flex items-center gap-3">
-
-          {/* Bell badge — existing */}
           <button
             onClick={onAlertsClick}
             className="relative bg-transparent border border-slate-600
@@ -44,7 +40,6 @@ function Header({
             )}
           </button>
 
-          {/* User info + logout */}
           <div className="flex items-center gap-2 pl-3 border-l border-slate-600">
             <span className="text-xs text-slate-400">
               {user?.username}
@@ -63,7 +58,6 @@ function Header({
             </button>
           </div>
 
-          {/* Status dot — existing */}
           <div className="flex items-center gap-2 text-sm pl-2">
             <span className={cn(
               'w-2.5 h-2.5 rounded-full inline-block',
@@ -74,18 +68,15 @@ function Header({
               {error ? 'Error' : !connected ? 'Connecting...' : 'Live'}
             </span>
           </div>
-
         </div>
       </div>
 
-      {/* Timestamp */}
       <p className="text-xs text-slate-500 pl-1 mb-3">
         {timestamp
           ? `Updated: ${new Date(timestamp).toLocaleTimeString()}`
           : 'Updated: --:--:--'}
       </p>
 
-      {/* Controls */}
       <div className="flex flex-wrap gap-2">
         {controls.map(({ label, action }) => (
           <button

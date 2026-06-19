@@ -2,19 +2,19 @@ import { cn } from '../utils/cn'
 
 const SEVERITY = {
   high: {
-    card:    'bg-red-950/40 border border-red-500/50 border-l-4 border-l-red-500',
-    badge:   'bg-red-500 text-white',
-    icon:    '🔴'
+    card:  'bg-red-950/40 border border-red-500/50 border-l-4 border-l-red-500',
+    badge: 'bg-red-500 text-white',
+    icon:  '🔴'
   },
   medium: {
-    card:    'bg-yellow-950/40 border border-yellow-500/50 border-l-4 border-l-yellow-500',
-    badge:   'bg-yellow-400 text-slate-900',
-    icon:    '🟡'
+    card:  'bg-yellow-950/40 border border-yellow-500/50 border-l-4 border-l-yellow-500',
+    badge: 'bg-yellow-400 text-slate-900',
+    icon:  '🟡'
   },
   low: {
-    card:    'bg-green-950/40 border border-green-500/50 border-l-4 border-l-green-500',
-    badge:   'bg-green-500 text-white',
-    icon:    '🟢'
+    card:  'bg-green-950/40 border border-green-500/50 border-l-4 border-l-green-500',
+    badge: 'bg-green-500 text-white',
+    icon:  '🟢'
   }
 }
 
@@ -25,8 +25,6 @@ const AlertCard = ({ alert, onDismiss }) => {
 
   return (
     <div className={cn('rounded-xl p-4 mb-3', s.card)}>
-
-      {/* Header */}
       <div className="flex items-start justify-between mb-2">
         <div className="flex items-center gap-2 flex-wrap">
           <span>{s.icon}</span>
@@ -38,22 +36,20 @@ const AlertCard = ({ alert, onDismiss }) => {
           </span>
         </div>
         <button
-  onClick={() => alert.id ? onDismiss(alert.id) : null}
-  disabled={!alert.id}
-  className={cn(
-    "text-slate-400 hover:text-slate-200 cursor-pointer bg-transparent border-none text-lg leading-none px-1 flex-shrink-0 transition-colors",
-    !alert.id && "opacity-50 cursor-not-allowed"
-  )}>
-  ×
-</button>
+          onClick={() => alert.id ? onDismiss(alert.id) : null}
+          disabled={!alert.id}
+          className={cn(
+            'text-slate-400 hover:text-slate-200 cursor-pointer bg-transparent border-none text-lg leading-none px-1 flex-shrink-0 transition-colors',
+            !alert.id && 'opacity-50 cursor-not-allowed'
+          )}>
+          ×
+        </button>
       </div>
 
-      {/* Message */}
       <p className="text-sm text-slate-300 leading-relaxed mb-3">
         {alert.message}
       </p>
 
-      {/* Suggested action */}
       {alert.suggested_action && (
         <div className="bg-slate-800/60 rounded-lg px-3 py-2 text-xs text-slate-400 mb-3">
           <span className="font-semibold text-slate-200">Action: </span>
@@ -61,7 +57,6 @@ const AlertCard = ({ alert, onDismiss }) => {
         </div>
       )}
 
-      {/* Footer */}
       <div className="flex items-center gap-4 text-xs text-slate-500 flex-wrap">
         {alert.cpu    != null && <span>CPU {alert.cpu?.toFixed(1)}%</span>}
         {alert.memory != null && <span>MEM {alert.memory?.toFixed(1)}%</span>}
@@ -80,8 +75,7 @@ function AlertPanel({ alerts = [], loading, onDismiss }) {
   )
 
   if (alerts.length === 0) return (
-    <div className="bg-slate-800 border border-slate-700 rounded-xl
-                    py-16 text-center">
+    <div className="bg-slate-800 border border-slate-700 rounded-xl py-16 text-center">
       <div className="text-4xl mb-3">✅</div>
       <div className="text-base font-medium text-slate-200 mb-1">
         All systems normal
@@ -98,7 +92,6 @@ function AlertPanel({ alerts = [], loading, onDismiss }) {
 
   return (
     <div>
-      {/* Summary */}
       <div className="flex gap-3 mb-5 flex-wrap">
         {[
           { label: 'Critical', count: high.length,   dot: 'bg-red-500'    },
@@ -115,7 +108,6 @@ function AlertPanel({ alerts = [], loading, onDismiss }) {
         ))}
       </div>
 
-      {/* Cards sorted by severity */}
       {[...high, ...medium, ...low].map(alert => (
         <AlertCard
           key={alert.id ?? alert.timestamp}

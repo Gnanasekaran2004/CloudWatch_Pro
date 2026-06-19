@@ -1,4 +1,3 @@
-
 const requests = new Map()
 
 export const rateLimit = ({
@@ -20,7 +19,7 @@ export const rateLimit = ({
 
     if (record.count > max) {
       return res.status(429).json({
-        error:     'Too many requests',
+        error:      'Too many requests',
         retryAfter: Math.ceil((record.resetAt - now) / 1000) + 's'
       })
     }

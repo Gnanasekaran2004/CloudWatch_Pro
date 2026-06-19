@@ -1,4 +1,5 @@
 let db = null
+
 export const setDb = (database) => { db = database }
 
 export const getSetting = (key) => {

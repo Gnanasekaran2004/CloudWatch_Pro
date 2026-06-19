@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { getToken } from '../api/client'
 
+const BASE = import.meta.env.VITE_BACKEND_URL || ''
+
 function AiStats() {
   const [stats,   setStats]   = useState(null)
   const [loading, setLoading] = useState(true)
@@ -8,8 +10,10 @@ function AiStats() {
   useEffect(() => {
     const load = async () => {
       try {
-        const res  = await fetch('/api/ai/stats', { headers: { Authorization: `Bearer ${getToken()}` } })
-        if(!res.ok) return
+        const res  = await fetch(`${BASE}/api/ai/stats`, {
+          headers: { Authorization: `Bearer ${getToken()}` }
+        })
+        if (!res.ok) return
         const data = await res.json()
         setStats(data)
       } finally {

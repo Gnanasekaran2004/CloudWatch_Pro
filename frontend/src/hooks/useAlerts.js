@@ -1,15 +1,19 @@
 import { useState, useEffect, useCallback } from 'react'
-import { getToken } from '../api/client' 
+import { getToken } from '../api/client'
+
+const BASE = import.meta.env.VITE_BACKEND_URL || ''
 
 export const useAlerts = (socket) => {
-  const [alerts, setAlerts] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [alerts,      setAlerts]      = useState([])
+  const [loading,     setLoading]     = useState(true)
   const [unreadCount, setUnreadCount] = useState(0)
 
   useEffect(() => {
     const fetchAlerts = async () => {
       try {
-        const res = await fetch('/api/alerts?limit=50',{headers: { Authorization: `Bearer ${getToken()}`}})
+        const res = await fetch(`${BASE}/api/alerts?limit=50`, {
+          headers: { Authorization: `Bearer ${getToken()}` }
+        })
         if (!res.ok) { setLoading(false); return }
         const data = await res.json()
         setAlerts(data)
@@ -37,7 +41,10 @@ export const useAlerts = (socket) => {
 
   const dismissAlert = useCallback(async (id) => {
     try {
-      await fetch(`/api/alerts/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${getToken()}`}})
+      await fetch(`${BASE}/api/alerts/${id}`, {
+        method:  'DELETE',
+        headers: { Authorization: `Bearer ${getToken()}` }
+      })
       setAlerts(prev => prev.filter(a => a.id !== id))
       setUnreadCount(prev => Math.max(0, prev - 1))
     } catch (err) {

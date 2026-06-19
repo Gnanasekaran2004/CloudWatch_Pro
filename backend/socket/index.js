@@ -8,6 +8,7 @@ export const createSocketServer = (httpServer, monitor) => {
       methods: ['GET', 'POST']
     }
   })
+
   io.use((socket, next) => {
     const token = socket.handshake.auth?.token
 
@@ -16,20 +17,19 @@ export const createSocketServer = (httpServer, monitor) => {
     }
 
     try {
-      const payload   = jwt.verify(token, process.env.JWT_SECRET)
-      socket.user     = payload
+      const payload = jwt.verify(token, process.env.JWT_SECRET)
+      socket.user   = payload
       next()
     } catch (err) {
       next(new Error('Invalid or expired token'))
     }
   })
- 
+
   io.on('connection', (socket) => {
     console.log(`[WS] Client connected: ${socket.id} (user: ${socket.user?.username})`)
 
     let subscribedMetric = null
-    let clientIntervalMs = null
-    let intervalTimer = null
+    let intervalTimer    = null
 
     const latest = monitor.getLatest()
     if (latest) {
@@ -37,13 +37,13 @@ export const createSocketServer = (httpServer, monitor) => {
     }
 
     socket.emit('connected', {
-      id: socket.id,
+      id:   socket.id,
       time: Date.now(),
       interval: 1000,
       serverInfo: {
-        node: process.version,
+        node:     process.version,
         platform: process.platform,
-        uptime: process.uptime()
+        uptime:   process.uptime()
       }
     })
 
@@ -74,7 +74,6 @@ export const createSocketServer = (httpServer, monitor) => {
         intervalTimer = null
       }
     }
-
 
     socket.on('watch', (page) => {
       const validPages = ['dashboard', 'processes', 'ports', 'history']
@@ -141,10 +140,11 @@ export const createSocketServer = (httpServer, monitor) => {
       timestamp: data.timestamp
     })
 
-    if (io.engine.clientsCount > 0 && data.cpu && data.memory && data.cpu.percent === 0 && data.memory.percent === 0) {
+    if (io.engine.clientsCount > 0 && data.cpu && data.memory &&
+        data.cpu.percent === 0 && data.memory.percent === 0) {
       io.emit('warning', {
         message: 'Metrics collector may be degraded',
-        time: Date.now()
+        time:    Date.now()
       })
     }
   })

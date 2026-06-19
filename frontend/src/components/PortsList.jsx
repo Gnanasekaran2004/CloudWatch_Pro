@@ -48,8 +48,6 @@ function PortsList({ ports = [], loading }) {
 
   return (
     <div className="bg-slate-800 border border-slate-700 rounded-xl p-6 mb-4">
-
-      {/* Header */}
       <div className="flex items-center justify-between mb-3 flex-wrap gap-3">
         <div className="flex items-center gap-3">
           <h2 className="text-lg font-semibold text-slate-100">Active Ports</h2>
@@ -72,7 +70,6 @@ function PortsList({ ports = [], loading }) {
         </button>
       </div>
 
-      {/* Stats */}
       {ports.length > 0 && (
         <div className="flex gap-3 text-xs text-slate-500 mb-3">
           <span>{stats.total} total</span>
@@ -83,7 +80,6 @@ function PortsList({ ports = [], loading }) {
         </div>
       )}
 
-      {/* Filter */}
       <input
         type="text"
         placeholder="Filter by port number..."
@@ -97,7 +93,6 @@ function PortsList({ ports = [], loading }) {
         )}
       />
 
-      {/* Column headers */}
       <div className="grid grid-cols-[80px_1fr_80px_80px] px-4 py-2
                       border-b-2 border-slate-600
                       text-xs text-slate-400 uppercase font-bold tracking-wider">
@@ -107,7 +102,6 @@ function PortsList({ ports = [], loading }) {
         <div>PID</div>
       </div>
 
-      {/* Rows */}
       {loading
         ? [1,2,3].map(i => (
             <div key={i} className="px-4 py-3 border-b border-slate-700">

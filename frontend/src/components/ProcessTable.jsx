@@ -47,8 +47,6 @@ function ProcessTable({ processes = [], loading }) {
 
   return (
     <div className="bg-slate-800 border border-slate-700 rounded-xl p-6 mb-4">
-
-      {/* Header */}
       <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
         <div className="flex items-center gap-3">
           <h2 className="text-lg font-semibold text-slate-100">Processes</h2>
@@ -69,7 +67,6 @@ function ProcessTable({ processes = [], loading }) {
         </div>
       </div>
 
-      {/* Search */}
       <input
         type="text"
         placeholder="Search by name or PID...  (press / to focus)"
@@ -84,7 +81,6 @@ function ProcessTable({ processes = [], loading }) {
         )}
       />
 
-      {/* Column headers */}
       <div className="grid grid-cols-[1fr_2fr_1fr_1fr] px-4 py-2
                       border-b-2 border-slate-600
                       text-xs text-slate-400 uppercase font-bold tracking-wider">
@@ -94,7 +90,6 @@ function ProcessTable({ processes = [], loading }) {
         <div className={cn(sortBy === 'mem' ? 'text-blue-400' : '')}>MEM</div>
       </div>
 
-      {/* Rows */}
       {loading
         ? [1,2,3,4,5].map(i => (
             <div key={i} className="px-4 py-3 border-b border-slate-700">
@@ -118,7 +113,6 @@ function ProcessTable({ processes = [], loading }) {
             ))
       }
 
-      {/* Show more */}
       {!loading && !search && processes.length > 10 && (
         <button
           onClick={toggleAll}

@@ -1,9 +1,9 @@
-import { Router }                      from 'express'
-import jwt                             from 'jsonwebtoken'
+import { Router }                    from 'express'
+import jwt                            from 'jsonwebtoken'
 import { findByUsername, findById,
          verifyPassword, createUser,
-         getUserCount }                from '../db/index.js'
-import { asyncHandler, badRequest }    from '../utils/index.js'
+         getUserCount }               from '../db/index.js'
+import { asyncHandler, badRequest }   from '../utils/index.js'
 
 export const authRouter = Router()
 

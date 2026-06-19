@@ -16,12 +16,12 @@ export const useMetrics = () => {
       return
     }
 
-    const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000'
+    const backendUrl = import.meta.env.VITE_BACKEND_URL
     const socket = io(backendUrl, {
       auth: { token },
-      reconnection:          true,
-      reconnectionDelay:     1000,
-      reconnectionAttempts:  10
+      reconnection:         true,
+      reconnectionDelay:    1000,
+      reconnectionAttempts: 10
     })
 
     socketRef.current = socket
@@ -31,9 +31,10 @@ export const useMetrics = () => {
       setError(null)
     })
 
-    socket.on('disconnect', (reason) => {
+    socket.on('disconnect', () => {
       setConnected(false)
     })
+
     socket.on('connect_error', (err) => {
       setConnected(false)
       const isAuthError = err.message.includes('Authentication') || err.message.includes('Invalid')
@@ -53,9 +54,9 @@ export const useMetrics = () => {
     }
   }, [])
 
-  const subscribe       = (metric) => socketRef.current?.emit('subscribe', metric)
-  const resetSubscribe  = ()       => socketRef.current?.emit('subscribe', null)
-  const changeInterval  = (ms)     => socketRef.current?.emit('set-interval', ms)
+  const subscribe      = (metric) => socketRef.current?.emit('subscribe', metric)
+  const resetSubscribe = ()       => socketRef.current?.emit('subscribe', null)
+  const changeInterval = (ms)     => socketRef.current?.emit('set-interval', ms)
 
   return { metrics, connected, error, subscribe, resetSubscribe, changeInterval, socketRef }
 }

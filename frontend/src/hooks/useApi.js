@@ -17,7 +17,8 @@ export const useApi = (apiFn, deps = []) => {
     } finally {
       setLoading(false)
     }
-  }, deps) 
+  }, deps)
+
   useEffect(() => {
     fetch()
   }, [fetch])
@@ -49,11 +50,11 @@ export const usePolling = (apiFn, intervalMs = 2000, deps = []) => {
       }
     }
 
-    poll() 
+    poll()
     const timer = setInterval(poll, intervalMs)
 
     return () => {
-      cancelled = true 
+      cancelled = true
       clearInterval(timer)
     }
   }, deps)

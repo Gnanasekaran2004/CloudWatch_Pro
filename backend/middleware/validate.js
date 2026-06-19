@@ -1,4 +1,3 @@
-
 export const validateQuery = (rules) => {
   return (req, res, next) => {
     const errors = []
@@ -20,7 +19,7 @@ export const validateQuery = (rules) => {
             errors.push(`Query param '${key}' must be >= ${rule.min}`)
           if (rule.max !== undefined && num > rule.max)
             errors.push(`Query param '${key}' must be <= ${rule.max}`)
-          req.query[key] = num 
+          req.query[key] = num
         }
       }
 

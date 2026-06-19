@@ -1,9 +1,10 @@
 # Dependencies
 node_modules/
 
-# Environment files
+# Environment files (never commit real secrets)
 .env
 backend/.env
+frontend/.env.local
 
 # Database files
 *.db
@@ -16,3 +17,12 @@ frontend/dist/
 # OS files
 .DS_Store
 Thumbs.db
+
+# Development & test artifacts
+backend/test-auth.js
+backend/test-claude.js
+backend/test-lifecycle.html
+backend/test-ws.html
+backend/socket-client.js
+backend/monitor.js
+backend/index.js

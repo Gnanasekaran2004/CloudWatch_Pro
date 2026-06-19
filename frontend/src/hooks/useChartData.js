@@ -11,8 +11,8 @@ export const useChartData = (rollingArray, valueKey = 'value') => {
 
 export const useMultiChartData = (rollingArrays) => {
   return useMemo(() => {
-    const keys  = Object.keys(rollingArrays)
-    const len   = Math.max(...keys.map(k => rollingArrays[k].length))
+    const keys   = Object.keys(rollingArrays)
+    const len    = Math.max(...keys.map(k => rollingArrays[k].length))
     const result = []
 
     for (let i = 0; i < len; i++) {

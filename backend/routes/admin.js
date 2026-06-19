@@ -1,8 +1,8 @@
-import { Router }                           from 'express'
+import { Router }                       from 'express'
 import { getAllUsers, createUser,
-         updateRole, deleteUser }           from '../db/index.js'
-import { asyncHandler, badRequest }         from '../utils/index.js'
-import { requireAdmin }                     from '../middleware/index.js'
+         updateRole, deleteUser }        from '../db/index.js'
+import { asyncHandler, badRequest }      from '../utils/index.js'
+import { requireAdmin }                  from '../middleware/index.js'
 
 export const adminRouter = Router()
 
@@ -40,9 +40,9 @@ adminRouter.put('/users/:id/role', asyncHandler(async (req, res) => {
     throw badRequest('Role must be admin or viewer')
 
   if (role === 'viewer') {
-    const allUsers  = getAllUsers()
-    const admins    = allUsers.filter(u => u.role === 'admin')
-    const isAdmin   = allUsers.find(u => u.id === id)?.role === 'admin'
+    const allUsers = getAllUsers()
+    const admins   = allUsers.filter(u => u.role === 'admin')
+    const isAdmin  = allUsers.find(u => u.id === id)?.role === 'admin'
     if (isAdmin && admins.length === 1)
       throw badRequest('Cannot remove the last admin')
   }

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 
-const TOKEN_KEY = 'cwp_token'
+const TOKEN_KEY  = 'cwp_token'
+const BASE       = import.meta.env.VITE_BACKEND_URL || ''
 
 export const useAuth = () => {
   const [user,    setUser]    = useState(null)
@@ -12,7 +13,7 @@ export const useAuth = () => {
       if (!token) { setLoading(false); return }
 
       try {
-        const res = await fetch('/api/auth/me', {
+        const res = await fetch(`${BASE}/api/auth/me`, {
           headers: { Authorization: `Bearer ${token}` }
         })
         if (res.ok) {
@@ -32,7 +33,7 @@ export const useAuth = () => {
   }, [])
 
   const login = useCallback(async (username, password) => {
-    const res  = await fetch('/api/auth/login', {
+    const res  = await fetch(`${BASE}/api/auth/login`, {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify({ username, password })

@@ -7,7 +7,6 @@ const colors = {
 
 const statusColor = (code) => {
   if (code < 300) return '\x1b[32m'
-  if (code < 400) return '\x1b[33m'
   if (code < 500) return '\x1b[33m'
   return '\x1b[31m'
 }
@@ -20,7 +19,7 @@ export const requestLogger = (req, res, next) => {
   res.on('finish', () => {
     const ms     = Date.now() - start
     const code   = res.statusCode
-    const mColor = colors[method]  || ''
+    const mColor = colors[method] || ''
     const sColor = statusColor(code)
     const reset  = colors.reset
 

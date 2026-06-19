@@ -1,23 +1,24 @@
 import Database from 'better-sqlite3'
 import path     from 'path'
 
-let   db      = null
+let db = null
 const DATA_DIR = process.env.DATA_DIR || process.cwd()
 const DB_PATH  = path.join(DATA_DIR, 'metrics.db')
+
 export const openDb = () => {
   db = new Database(DB_PATH)
 
   db.exec(`
     CREATE TABLE IF NOT EXISTS metrics (
-      id        INTEGER PRIMARY KEY AUTOINCREMENT,
-      timestamp INTEGER NOT NULL,
-      cpu       REAL    DEFAULT 0,
-      memory    REAL    DEFAULT 0,
-      disk      REAL    DEFAULT 0,
-      rx_sec    REAL    DEFAULT 0,
-      tx_sec    REAL    DEFAULT 0,
-      disk_read REAL    DEFAULT 0,
-      disk_write REAL   DEFAULT 0
+      id         INTEGER PRIMARY KEY AUTOINCREMENT,
+      timestamp  INTEGER NOT NULL,
+      cpu        REAL    DEFAULT 0,
+      memory     REAL    DEFAULT 0,
+      disk       REAL    DEFAULT 0,
+      rx_sec     REAL    DEFAULT 0,
+      tx_sec     REAL    DEFAULT 0,
+      disk_read  REAL    DEFAULT 0,
+      disk_write REAL    DEFAULT 0
     )
   `)
 
@@ -27,57 +28,59 @@ export const openDb = () => {
 
   console.log('  ✓ SQLite database opened:', DB_PATH)
 
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS alerts (
+      id               INTEGER PRIMARY KEY AUTOINCREMENT,
+      timestamp        INTEGER NOT NULL,
+      severity         TEXT    DEFAULT 'medium',
+      title            TEXT    NOT NULL,
+      message          TEXT    NOT NULL,
+      suggested_action TEXT,
+      cpu              REAL    DEFAULT 0,
+      memory           REAL    DEFAULT 0,
+      disk             REAL    DEFAULT 0
+    )
+  `)
 
   db.exec(`
-  CREATE TABLE IF NOT EXISTS alerts (
-    id              INTEGER PRIMARY KEY AUTOINCREMENT,
-    timestamp       INTEGER NOT NULL,
-    severity        TEXT    DEFAULT 'medium',
-    title           TEXT    NOT NULL,
-    message         TEXT    NOT NULL,
-    suggested_action TEXT,
-    cpu             REAL    DEFAULT 0,
-    memory          REAL    DEFAULT 0,
-    disk            REAL    DEFAULT 0
-  )
-`)
+    CREATE INDEX IF NOT EXISTS idx_alerts_timestamp ON alerts (timestamp)
+  `)
 
-db.exec(`
-  CREATE INDEX IF NOT EXISTS idx_alerts_timestamp ON alerts (timestamp)
-`)
+  console.log('  ✓ Alerts table ready')
 
-console.log('  ✓ Alerts table ready')
-db.exec(`
-  CREATE TABLE IF NOT EXISTS settings (
-    key   TEXT PRIMARY KEY,
-    value TEXT NOT NULL
-  )
-`)
-db.exec(`
-  CREATE TABLE IF NOT EXISTS users (
-    id            INTEGER PRIMARY KEY AUTOINCREMENT,
-    username      TEXT    UNIQUE NOT NULL,
-    password_hash TEXT    NOT NULL,
-    role          TEXT    DEFAULT 'viewer',
-    created_at    INTEGER DEFAULT (strftime('%s','now') * 1000)
-  )
-`)
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS settings (
+      key   TEXT PRIMARY KEY,
+      value TEXT NOT NULL
+    )
+  `)
 
-console.log('  ✓ Users table ready')
-const defaults = [
-  { key: 'threshold_cpu',    value: '85' },
-  { key: 'threshold_memory', value: '90' },
-  { key: 'threshold_disk',   value: '95' },
-  { key: 'cooldown_seconds', value: '60' }
-]
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS users (
+      id            INTEGER PRIMARY KEY AUTOINCREMENT,
+      username      TEXT    UNIQUE NOT NULL,
+      password_hash TEXT    NOT NULL,
+      role          TEXT    DEFAULT 'viewer',
+      created_at    INTEGER DEFAULT (strftime('%s','now') * 1000)
+    )
+  `)
 
-const insertSetting = db.prepare(`
-  INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)
-`)
-defaults.forEach(({ key, value }) => insertSetting.run(key, value))
+  console.log('  ✓ Users table ready')
 
-console.log('  ✓ Settings table ready')
-return db
+  const defaults = [
+    { key: 'threshold_cpu',    value: '85' },
+    { key: 'threshold_memory', value: '90' },
+    { key: 'threshold_disk',   value: '95' },
+    { key: 'cooldown_seconds', value: '60' }
+  ]
+
+  const insertSetting = db.prepare(`
+    INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)
+  `)
+  defaults.forEach(({ key, value }) => insertSetting.run(key, value))
+
+  console.log('  ✓ Settings table ready')
+  return db
 }
 
 export const insertSnapshot = (snapshot) => {
@@ -127,12 +130,12 @@ export const deleteOldRows = () => {
 
 export const getDbStats = () => {
   if (!db) return null
-  const count   = db.prepare('SELECT COUNT(*) as count FROM metrics').get()
-  const oldest  = db.prepare('SELECT MIN(timestamp) as ts FROM metrics').get()
-  const newest  = db.prepare('SELECT MAX(timestamp) as ts FROM metrics').get()
+  const count  = db.prepare('SELECT COUNT(*) as count FROM metrics').get()
+  const oldest = db.prepare('SELECT MIN(timestamp) as ts FROM metrics').get()
+  const newest = db.prepare('SELECT MAX(timestamp) as ts FROM metrics').get()
   return {
-    rows:    count.count,
-    oldest:  oldest.ts ? new Date(oldest.ts).toLocaleTimeString() : null,
-    newest:  newest.ts ? new Date(newest.ts).toLocaleTimeString() : null
+    rows:   count.count,
+    oldest: oldest.ts ? new Date(oldest.ts).toLocaleTimeString() : null,
+    newest: newest.ts ? new Date(newest.ts).toLocaleTimeString() : null
   }
 }

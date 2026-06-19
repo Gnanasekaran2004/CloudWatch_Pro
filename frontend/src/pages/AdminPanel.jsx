@@ -2,12 +2,14 @@ import { useState, useEffect, useCallback } from 'react'
 import { getToken } from '../api/client'
 import { cn }       from '../utils/cn'
 
+const BASE = import.meta.env.VITE_BACKEND_URL || ''
+
 const authFetch = (url, opts = {}) =>
-  fetch(url, {
+  fetch(`${BASE}${url}`, {
     ...opts,
     headers: {
-      'Content-Type':  'application/json',
-      Authorization:   `Bearer ${getToken()}`,
+      'Content-Type': 'application/json',
+      Authorization:  `Bearer ${getToken()}`,
       ...opts.headers
     }
   })
@@ -58,7 +60,7 @@ function AdminPanel({ currentUser }) {
 
   const handleRoleChange = async (id, role) => {
     try {
-      const res = await authFetch(`/api/admin/users/${id}/role`, {
+      const res  = await authFetch(`/api/admin/users/${id}/role`, {
         method: 'PUT',
         body:   JSON.stringify({ role })
       })
@@ -73,7 +75,7 @@ function AdminPanel({ currentUser }) {
   const handleDelete = async (id, username) => {
     if (!confirm(`Delete user "${username}"? This cannot be undone.`)) return
     try {
-      const res = await authFetch(`/api/admin/users/${id}`, { method: 'DELETE' })
+      const res  = await authFetch(`/api/admin/users/${id}`, { method: 'DELETE' })
       const body = await res.json()
       if (!res.ok) throw new Error(body.error)
       setUsers(prev => prev.filter(u => u.id !== id))
@@ -90,8 +92,6 @@ function AdminPanel({ currentUser }) {
 
   return (
     <div className="bg-slate-800 border border-slate-700 rounded-xl p-6">
-
-      {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
           <h2 className="text-lg font-semibold text-slate-100">
@@ -109,7 +109,6 @@ function AdminPanel({ currentUser }) {
         </button>
       </div>
 
-      {/* Error banner */}
       {error && (
         <div className="bg-red-950 border border-red-500 rounded-lg
                         px-4 py-3 mb-4 text-sm text-red-400 flex justify-between">
@@ -118,7 +117,6 @@ function AdminPanel({ currentUser }) {
         </div>
       )}
 
-      {/* Create user form */}
       {showForm && (
         <form onSubmit={handleCreate}
               className="bg-slate-900 border border-slate-600 rounded-xl
@@ -179,7 +177,6 @@ function AdminPanel({ currentUser }) {
         </form>
       )}
 
-      {/* Column headers */}
       <div className="grid grid-cols-[1fr_100px_120px_80px] px-4 py-2
                       border-b-2 border-slate-600
                       text-xs text-slate-400 uppercase font-bold tracking-wider">
@@ -189,7 +186,6 @@ function AdminPanel({ currentUser }) {
         <div>Actions</div>
       </div>
 
-      {/* User rows */}
       {users.map(u => {
         const isSelf      = u.id === currentUser?.id
         const createdDate = new Date(u.created_at).toLocaleDateString()
@@ -199,8 +195,6 @@ function AdminPanel({ currentUser }) {
                className="grid grid-cols-[1fr_100px_120px_80px] px-4 py-3
                           border-b border-slate-700 items-center text-sm
                           hover:bg-slate-700/40 transition-colors">
-
-            {/* Username */}
             <div className="flex items-center gap-2">
               <span className="text-slate-100 font-medium">{u.username}</span>
               {isSelf && (
@@ -209,7 +203,6 @@ function AdminPanel({ currentUser }) {
               )}
             </div>
 
-            {/* Role badge + toggle */}
             <div>
               {isSelf ? (
                 <span className={cn(
@@ -233,10 +226,8 @@ function AdminPanel({ currentUser }) {
               )}
             </div>
 
-            {/* Created date */}
             <div className="text-xs text-slate-500">{createdDate}</div>
 
-            {/* Delete button */}
             <div>
               {!isSelf && (
                 <button

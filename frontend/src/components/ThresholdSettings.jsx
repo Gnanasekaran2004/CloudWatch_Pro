@@ -2,10 +2,12 @@ import { useState, useEffect } from 'react'
 import { cn } from '../utils/cn'
 import { getToken } from '../api/client'
 
+const BASE = import.meta.env.VITE_BACKEND_URL || ''
+
 const SETTINGS = [
-  { key: 'threshold_cpu',    label: 'CPU threshold',    icon: '🖥️', min: 10, max: 99, step: 1,  unit: '%', desc: 'AI alerts when CPU exceeds this' },
-  { key: 'threshold_memory', label: 'Memory threshold', icon: '💾', min: 10, max: 99, step: 1,  unit: '%', desc: 'AI alerts when memory exceeds this' },
-  { key: 'threshold_disk',   label: 'Disk threshold',   icon: '💿', min: 10, max: 99, step: 1,  unit: '%', desc: 'AI alerts when disk exceeds this' },
+  { key: 'threshold_cpu',    label: 'CPU threshold',    icon: '🖥️', min: 10, max: 99,   step: 1,  unit: '%', desc: 'AI alerts when CPU exceeds this' },
+  { key: 'threshold_memory', label: 'Memory threshold', icon: '💾', min: 10, max: 99,   step: 1,  unit: '%', desc: 'AI alerts when memory exceeds this' },
+  { key: 'threshold_disk',   label: 'Disk threshold',   icon: '💿', min: 10, max: 99,   step: 1,  unit: '%', desc: 'AI alerts when disk exceeds this' },
   { key: 'cooldown_seconds', label: 'AI cooldown',      icon: '⏱️', min: 10, max: 3600, step: 10, unit: 's', desc: 'Min seconds between AI calls' },
 ]
 
@@ -17,8 +19,7 @@ function ThresholdSettings() {
   const [error,   setError]   = useState(null)
 
   useEffect(() => {
-    const base = import.meta.env.VITE_BACKEND_URL || ''
-    fetch(`${base}/api/settings`, { headers: { Authorization: `Bearer ${getToken()}` } })
+    fetch(`${BASE}/api/settings`, { headers: { Authorization: `Bearer ${getToken()}` } })
       .then(r => r.json())
       .then(data => {
         const parsed = {}
@@ -35,9 +36,9 @@ function ThresholdSettings() {
   const handleSave = async (key) => {
     setSaving(prev => ({ ...prev, [key]: true }))
     try {
-      const res = await fetch(`/api/settings/${key}`, {
+      const res = await fetch(`${BASE}/api/settings/${key}`, {
         method:  'PUT',
-        headers: { 'Content-Type': 'application/json',  Authorization:  `Bearer ${getToken()}`},
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
         body:    JSON.stringify({ value: values[key] })
       })
       if (!res.ok) throw new Error((await res.json()).error)
@@ -87,7 +88,6 @@ function ThresholdSettings() {
 
           return (
             <div key={key}>
-              {/* Label + value + save button */}
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <span className="text-base">{icon}</span>
@@ -115,7 +115,6 @@ function ThresholdSettings() {
                 </div>
               </div>
 
-              {/* Slider */}
               <input
                 type="range"
                 min={min} max={max} step={step}
@@ -124,7 +123,6 @@ function ThresholdSettings() {
                 className="w-full h-1 cursor-pointer accent-blue-400"
               />
 
-              {/* Min / max / desc */}
               <div className="flex justify-between mt-1 text-xs text-slate-500">
                 <span>{min}{unit}</span>
                 <span className="text-center flex-1 px-4">{desc}</span>
@@ -135,9 +133,7 @@ function ThresholdSettings() {
         })}
       </div>
 
-      {/* Live preview */}
-      <div className="mt-6 bg-slate-900 rounded-lg px-4 py-3
-                      text-xs text-slate-400">
+      <div className="mt-6 bg-slate-900 rounded-lg px-4 py-3 text-xs text-slate-400">
         <span className="text-slate-200 font-semibold">Current config: </span>
         AI alerts when CPU &gt; {values.threshold_cpu ?? 85}%,
         memory &gt; {values.threshold_memory ?? 90}%,

@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs'
 
 let db = null
+
 export const setDb = (database) => { db = database }
 
 export const createUser = async (username, password, role = 'viewer') => {

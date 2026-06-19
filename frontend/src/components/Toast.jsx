@@ -1,10 +1,12 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useCallback } from 'react'
 
 const ToastItem = ({ toast, onRemove }) => {
-  useEffect(() => {
-    const timer = setTimeout(() => onRemove(toast.id), toast.duration ?? 3000)
-    return () => clearTimeout(timer)
-  }, [toast.id, toast.duration, onRemove])
+  const [visible, setVisible] = useState(true)
+
+  const dismiss = useCallback(() => {
+    setVisible(false)
+    setTimeout(() => onRemove(toast.id), 200)
+  }, [toast.id, onRemove])
 
   const colors = {
     info:    { bg: '#1e3a5f', border: 'var(--blue)',   text: 'var(--blue)'   },
@@ -26,7 +28,9 @@ const ToastItem = ({ toast, onRemove }) => {
       minWidth:     '260px',
       maxWidth:     '380px',
       boxShadow:    '0 4px 12px rgba(0,0,0,0.4)',
-      animation:    'slideIn 0.2s ease'
+      animation:    'slideIn 0.2s ease',
+      opacity:      visible ? 1 : 0,
+      transition:   'opacity 0.2s ease'
     }}>
       <span style={{ color: c.text, fontSize: '16px' }}>
         {toast.type === 'success' ? '✓' :
@@ -38,7 +42,7 @@ const ToastItem = ({ toast, onRemove }) => {
         {toast.message}
       </span>
       <button
-        onClick={() => onRemove(toast.id)}
+        onClick={dismiss}
         style={{ background: 'none', border: 'none',
                  color: 'var(--text-muted)', cursor: 'pointer',
                  fontSize: '16px', padding: '0 2px' }}>
@@ -72,6 +76,7 @@ export const useToast = () => {
   const add = useCallback((message, type = 'info', duration = 3000) => {
     const id = Date.now() + Math.random()
     setToasts(prev => [...prev, { id, message, type, duration }])
+    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), duration)
   }, [])
 
   const remove = useCallback((id) => {

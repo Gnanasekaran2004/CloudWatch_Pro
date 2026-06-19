@@ -1,13 +1,12 @@
 import { formatPercent } from '../utils/index.js'
-
-import { KNOWN_PORTS } from '../collector/ports.js' 
+import { KNOWN_PORTS }   from '../collector/ports.js'
 
 export const shapeSnapshot = (rawData) => {
   const { cpuLoad, mem, disk, net, procs, conns, diskIO } = rawData
 
   const mainDisk = disk?.[0]  || { size: 0, used: 0, use: 0 }
   const mainNet  = net?.[0]   || { rx_sec: 0, tx_sec: 0 }
-  
+
   const processes = (procs?.list || [])
     .sort((a, b) => b.cpu - a.cpu)
     .slice(0, 20)
@@ -24,13 +23,13 @@ export const shapeSnapshot = (rawData) => {
     .forEach(c => {
       const portNum = parseInt(c.localPort, 10)
       const key = `${portNum}-${c.protocol}-${c.pid}`
-      
+
       if (!portMap.has(key)) {
         portMap.set(key, {
           port:     portNum,
           protocol: c.protocol,
           pid:      c.pid,
-          label:    KNOWN_PORTS[portNum] || null 
+          label:    KNOWN_PORTS[portNum] || null
         })
       }
     })

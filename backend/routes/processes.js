@@ -1,7 +1,7 @@
-import { Router }                          from 'express'
-import { validateQuery }                   from '../middleware/index.js'
+import { Router }                    from 'express'
+import { validateQuery }              from '../middleware/index.js'
 import { asyncHandler, notFound,
-         badRequest, unavailable }         from '../utils/index.js'
+         badRequest, unavailable }   from '../utils/index.js'
 
 export const createProcessesRouter = (monitor) => {
   const router = Router()

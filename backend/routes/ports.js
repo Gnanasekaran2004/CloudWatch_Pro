@@ -1,6 +1,6 @@
-import { Router }                       from 'express'
+import { Router }                    from 'express'
 import { asyncHandler, notFound,
-         badRequest, unavailable }      from '../utils/index.js'
+         badRequest, unavailable }  from '../utils/index.js'
 
 export const createPortsRouter = (monitor) => {
   const router = Router()

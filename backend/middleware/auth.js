@@ -5,8 +5,8 @@ export const requireAuth = (req, res, next) => {
 
   if (!authHeader?.startsWith('Bearer ')) {
     return res.status(401).json({
-      error:  'Authentication required',
-      code:   'NO_TOKEN'
+      error: 'Authentication required',
+      code:  'NO_TOKEN'
     })
   }
 
@@ -14,7 +14,7 @@ export const requireAuth = (req, res, next) => {
 
   try {
     const payload = jwt.verify(token, process.env.JWT_SECRET)
-    req.user = payload   // { userId, username, role, iat, exp }
+    req.user = payload
     next()
   } catch (err) {
     const code = err.name === 'TokenExpiredError' ? 'TOKEN_EXPIRED' : 'INVALID_TOKEN'

@@ -3,22 +3,19 @@ import { AreaChart, Area, XAxis, YAxis, Tooltip,
          ResponsiveContainer, CartesianGrid } from 'recharts'
 import { getToken } from '../api/client'
 
+const BASE = import.meta.env.VITE_BACKEND_URL || ''
+
 const cn = (...classes) => classes.filter(Boolean).join(' ')
 
 const formatValue = (v, unit) => {
   if (v === undefined || v === null || isNaN(v)) return '--'
   if (unit === 'B' || unit === 'B/s' || unit === ' B/s') {
     if (v >= 1024 * 1024 * 1024) return `${(v / (1024 * 1024 * 1024)).toFixed(1)} GB${unit.trim() === 'B/s' ? '/s' : ''}`
-    if (v >= 1024 * 1024) return `${(v / (1024 * 1024)).toFixed(1)} MB${unit.trim() === 'B/s' ? '/s' : ''}`
-    if (v >= 1024) return `${(v / 1024).toFixed(1)} KB${unit.trim() === 'B/s' ? '/s' : ''}`
+    if (v >= 1024 * 1024)        return `${(v / (1024 * 1024)).toFixed(1)} MB${unit.trim() === 'B/s' ? '/s' : ''}`
+    if (v >= 1024)               return `${(v / 1024).toFixed(1)} KB${unit.trim() === 'B/s' ? '/s' : ''}`
     return `${v} ${unit.trim()}`
   }
   return `${v.toFixed(1)}${unit}`
-}
-
-const thinData = (dataArray) => {
-  if (!Array.isArray(dataArray)) return []
-  return dataArray
 }
 
 const ChartTooltip = ({ active, payload, unit, color }) => {
@@ -79,43 +76,41 @@ function ChartCard({ title, color, dataKey, unit, data }) {
 
 function HistoryView() {
   const [historyData, setHistoryData] = useState([])
-  const [stats, setStats] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-  const [range, setRange] = useState('30m')
+  const [stats,       setStats]       = useState(null)
+  const [loading,     setLoading]     = useState(true)
+  const [error,       setError]       = useState(null)
+  const [range,       setRange]       = useState('30m')
 
   const ranges = [
-    { label: '5m', value: '5m' },
+    { label: '5m',  value: '5m'  },
     { label: '30m', value: '30m' },
-    { label: '1h', value: '1h' },
+    { label: '1h',  value: '1h'  },
     { label: '24h', value: '24h' }
   ]
 
   const fetchHistory = useCallback(async (selectedRange) => {
     setLoading(true)
     setError(null)
-    const base = import.meta.env.VITE_BACKEND_URL || ''
-    
+
     try {
-      const res = await fetch(`${base}/api/history?range=${selectedRange}`, {
+      const res = await fetch(`${BASE}/api/history?range=${selectedRange}`, {
         headers: { Authorization: `Bearer ${getToken()}` }
       })
       const body = await res.json()
       if (!res.ok) throw new Error(body.error || 'Failed to fetch history')
 
       let rawArray = []
-      if (Array.isArray(body)) rawArray = body
+      if (Array.isArray(body))       rawArray = body
       else if (Array.isArray(body?.data)) rawArray = body.data
-      else if (body?.history) rawArray = body.history
+      else if (body?.history)        rawArray = body.history
 
-      setHistoryData(thinData(rawArray))
+      setHistoryData(rawArray)
 
-      const statsRes = await fetch(`${base}/api/db/stats`, {
+      const statsRes = await fetch(`${BASE}/api/db/stats`, {
         headers: { Authorization: `Bearer ${getToken()}` }
       })
       if (statsRes.ok) {
-        const statsBody = await statsRes.json()
-        setStats(statsBody)
+        setStats(await statsRes.json())
       }
     } catch (err) {
       console.error('Failed to resolve historical payload:', err)
@@ -183,10 +178,10 @@ function HistoryView() {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <ChartCard title="CPU Usage"   dataKey="cpu"        color="#38bdf8" unit="%" data={historyData} />
-          <ChartCard title="Memory Usage" dataKey="memory"    color="#a855f7" unit="%" data={historyData} />
-          <ChartCard title="Disk Write"  dataKey="disk_write" color="#f59e0b" unit=" B/s" data={historyData} />
-          <ChartCard title="Network Rx"  dataKey="rx"         color="#22c55e" unit=" B/s" data={historyData} />
+          <ChartCard title="CPU Usage"    dataKey="cpu"        color="#38bdf8" unit="%" data={historyData} />
+          <ChartCard title="Memory Usage" dataKey="memory"     color="#a855f7" unit="%" data={historyData} />
+          <ChartCard title="Disk Write"   dataKey="disk_write" color="#f59e0b" unit=" B/s" data={historyData} />
+          <ChartCard title="Network Rx"   dataKey="rx"         color="#22c55e" unit=" B/s" data={historyData} />
         </div>
       )}
     </div>

@@ -13,10 +13,10 @@ const DEFAULT_THRESHOLDS = {
 
 export class AnomalyDetector {
   constructor() {
-    this.lastCallAt  = 0
-    this.cooldownMs  = 60000
+    this.lastCallAt = 0
+    this.cooldownMs = 60000
     this.thresholds = { cpu: 5, memory: 5, disk: 5 }
-    this.totalCalls  = 0
+    this.totalCalls = 0
   }
 
   setThresholds(thresholds) {

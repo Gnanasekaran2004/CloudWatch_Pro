@@ -1,41 +1,36 @@
 import 'dotenv/config'
-import { adminRouter } from './routes/admin.js'
 import express          from 'express'
 import { createServer } from 'http'
 import cors             from 'cors'
-import { openDb, insertSnapshot,
-         deleteOldRows, getDbStats } from './db/index.js'
+import { adminRouter }  from './routes/admin.js'
+import { openDb, insertSnapshot, deleteOldRows, getDbStats } from './db/index.js'
 import { MetricsEmitter }          from './collector/index.js'
-import { historyRouter,
-         createMetricsRouter,
-         createProcessesRouter,
-         createPortsRouter }       from './routes/index.js'
+import { historyRouter, createMetricsRouter,
+         createProcessesRouter, createPortsRouter } from './routes/index.js'
 import { createSocketServer }      from './socket/index.js'
 import { AnomalyDetector }         from './services/anomalyDetector.js'
-import { insertAlert, queryAlerts,
-         deleteAlert, getAlertCount,
-         setDb }                   from './db/alerts.js'
+import { insertAlert, queryAlerts, deleteAlert,
+         getAlertCount, setDb }    from './db/alerts.js'
 import { getAllSettings, updateSetting,
          getThresholds, setSettingsDb } from './db/index.js'
-import { createSettingsRouter } from './routes/settings.js'
+import { createSettingsRouter }    from './routes/settings.js'
 import { createUser, getUserCount, setDb as setUsersDb } from './db/users.js'
-import { authRouter } from './routes/auth.js'
+import { authRouter }              from './routes/auth.js'
 import { requestLogger, rateLimit, errorHandler, requireAuth } from './middleware/index.js'
 
 const app     = express()
-const server  = createServer(app)   
+const server  = createServer(app)
 const PORT    = process.env.PORT || 3000
 const monitor = new MetricsEmitter(1000)
 let isShuttingDown = false
-let insertCount = 0
-let isAnalyzing = false
+let insertCount    = 0
+let isAnalyzing    = false
 
-// Dynamic CORS configuration accepting flexible strings and credentials
 app.use(cors({
   origin: (origin, callback) => {
     const allowed = [
       process.env.CORS_ORIGIN,
-      process.env.CORS_ORIGIN?.replace(/\/$/, ''),  // remove trailing slash
+      process.env.CORS_ORIGIN?.replace(/\/$/, ''),
       'http://localhost:5173',
       'http://localhost:4000'
     ].filter(Boolean)
@@ -43,7 +38,6 @@ app.use(cors({
     if (!origin || allowed.includes(origin)) {
       callback(null, true)
     } else {
-      console.log('[CORS] Blocked origin:', origin)
       callback(new Error(`CORS blocked: ${origin}`))
     }
   },
@@ -66,7 +60,7 @@ if (getUserCount() === 0) {
 }
 
 const detector     = new AnomalyDetector()
-const recentHistory = [] 
+const recentHistory = []
 const thresholds = getThresholds()
 detector.setThresholds(thresholds)
 console.log(`  ✓ Thresholds loaded: CPU>${thresholds.cpu}% MEM>${thresholds.memory}% DISK>${thresholds.disk}%`)
@@ -83,7 +77,7 @@ app.get('/api/health', (req, res) => {
 
 app.use('/api', requireAuth)
 
-app.use('/api/admin', adminRouter)
+app.use('/api/admin',    adminRouter)
 app.use('/api/metrics',   createMetricsRouter(monitor))
 app.use('/api/processes', createProcessesRouter(monitor))
 app.use('/api/ports',     createPortsRouter(monitor))
@@ -129,8 +123,8 @@ app.get('/api/db/stats', (req, res) => {
 })
 
 app.get('/api/socket-stats', (req, res) => {
-  const sockets   = io.sockets.sockets
-  const clients   = []
+  const sockets = io.sockets.sockets
+  const clients = []
 
   sockets.forEach((socket) => {
     clients.push({
@@ -147,7 +141,7 @@ app.get('/api/socket-stats', (req, res) => {
   })
 })
 
-app.use((req, res, next) => {
+app.use((req, res) => {
   res.status(404).json({ error: `Not found: ${req.path}` })
 })
 
@@ -174,7 +168,7 @@ monitor.on('snapshot', async (data) => {
     const alert = await detector.analyze(snapshotCopy, [...recentHistory])
     if (alert) {
       insertAlert(alert)
-      io.emit('alert', alert)   
+      io.emit('alert', alert)
       console.log(`[ALERT] ${alert.severity.toUpperCase()}: ${alert.title}`)
     }
   } catch (err) {
@@ -188,7 +182,7 @@ setInterval(deleteOldRows, 3600000)
 deleteOldRows()
 
 const shutdown = async (signal) => {
-  if (isShuttingDown) return  
+  if (isShuttingDown) return
   isShuttingDown = true
 
   console.log(`\n[${signal}] Shutting down gracefully...`)
@@ -223,7 +217,7 @@ process.on('unhandledRejection', (reason) => {
   shutdown('unhandledRejection')
 })
 
-process.on('SIGINT',  () => shutdown('SIGINT')) 
+process.on('SIGINT',  () => shutdown('SIGINT'))
 process.on('SIGTERM', () => shutdown('SIGTERM'))
 
 server.listen(PORT, () => {

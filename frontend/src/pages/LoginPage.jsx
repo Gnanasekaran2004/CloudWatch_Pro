@@ -23,8 +23,6 @@ function LoginPage({ onLogin }) {
   return (
     <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
       <div className="w-full max-w-sm">
-
-        {/* Logo */}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-slate-100 mb-1">
             CloudWatch_Pro
@@ -34,7 +32,6 @@ function LoginPage({ onLogin }) {
           </p>
         </div>
 
-        {/* Card */}
         <div className="bg-slate-800 border border-slate-700 rounded-2xl p-8">
           <h2 className="text-lg font-semibold text-slate-100 mb-6">
             Sign in
@@ -48,7 +45,6 @@ function LoginPage({ onLogin }) {
           )}
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-
             <div>
               <label className="block text-xs font-medium text-slate-400 mb-1.5">
                 Username
@@ -73,7 +69,7 @@ function LoginPage({ onLogin }) {
               <input
                 type="password"
                 value={password}
-                autoComplete='new-password'
+                autoComplete="new-password"
                 onChange={e => setPassword(e.target.value)}
                 placeholder="••••••••"
                 required
@@ -94,14 +90,12 @@ function LoginPage({ onLogin }) {
               )}>
               {loading ? 'Signing in...' : 'Sign in'}
             </button>
-
           </form>
 
           <p className="mt-4 text-xs text-center text-slate-500">
             Default: admin / admin123
           </p>
         </div>
-
       </div>
     </div>
   )
