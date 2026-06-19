@@ -7,11 +7,11 @@ export const createSettingsRouter = (detector) => {
   const router = Router()
 
   router.get('/', asyncHandler(async (req, res) => {
-    res.json(getAllSettings())
+    res.json(await getAllSettings())
   }))
 
   router.get('/thresholds', asyncHandler(async (req, res) => {
-    res.json(getThresholds())
+    res.json(await getThresholds())
   }))
 
   router.put('/:key', asyncHandler(async (req, res) => {
@@ -30,9 +30,10 @@ export const createSettingsRouter = (detector) => {
     if (key === 'cooldown_seconds' && (num < 10 || num > 3600))
                                     throw badRequest('Cooldown must be 10–3600s')
 
-    updateSetting(key, num)
+    await updateSetting(key, num)
 
-    detector.setThresholds(getThresholds())
+    const newThresholds = await getThresholds()
+    detector.setThresholds(newThresholds)
     if (key === 'cooldown_seconds') {
       detector.cooldownMs = num * 1000
     }

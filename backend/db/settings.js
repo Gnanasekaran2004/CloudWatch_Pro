@@ -2,28 +2,31 @@ let db = null
 
 export const setDb = (database) => { db = database }
 
-export const getSetting = (key) => {
+export const getSetting = async (key) => {
   if (!db) return null
-  const row = db.prepare('SELECT value FROM settings WHERE key = ?').get(key)
-  return row ? row.value : null
+  const { rows } = await db.execute({
+    sql:  'SELECT value FROM settings WHERE key = ?',
+    args: [key]
+  })
+  return rows[0] ? rows[0].value : null
 }
 
-export const getAllSettings = () => {
+export const getAllSettings = async () => {
   if (!db) return {}
-  const rows = db.prepare('SELECT key, value FROM settings').all()
+  const { rows } = await db.execute('SELECT key, value FROM settings')
   return rows.reduce((acc, r) => ({ ...acc, [r.key]: r.value }), {})
 }
 
-export const updateSetting = (key, value) => {
+export const updateSetting = async (key, value) => {
   if (!db) return
-  db.prepare(`
-    INSERT INTO settings (key, value) VALUES (?, ?)
-    ON CONFLICT(key) DO UPDATE SET value = excluded.value
-  `).run(key, String(value))
+  await db.execute({
+    sql:  'INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value',
+    args: [key, String(value)]
+  })
 }
 
-export const getThresholds = () => {
-  const all = getAllSettings()
+export const getThresholds = async () => {
+  const all = await getAllSettings()
   return {
     cpu:    parseFloat(all.threshold_cpu    ?? 85),
     memory: parseFloat(all.threshold_memory ?? 90),

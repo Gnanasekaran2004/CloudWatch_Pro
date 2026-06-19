@@ -3,7 +3,7 @@ import express          from 'express'
 import { createServer } from 'http'
 import cors             from 'cors'
 import { adminRouter }  from './routes/admin.js'
-import { openDb, insertSnapshot, deleteOldRows, getDbStats } from './db/index.js'
+import { openDb }       from './db/index.js'
 import { MetricsEmitter }          from './collector/index.js'
 import { historyRouter, createMetricsRouter,
          createProcessesRouter, createPortsRouter } from './routes/index.js'
@@ -11,11 +11,12 @@ import { createSocketServer }      from './socket/index.js'
 import { AnomalyDetector }         from './services/anomalyDetector.js'
 import { insertAlert, queryAlerts, deleteAlert,
          getAlertCount, setDb }    from './db/alerts.js'
-import { getAllSettings, updateSetting,
-         getThresholds, setSettingsDb } from './db/index.js'
+import { getThresholds, setDb as setSettingsDb } from './db/settings.js'
 import { createSettingsRouter }    from './routes/settings.js'
-import { createUser, getUserCount, setDb as setUsersDb } from './db/users.js'
+import { createUser, getUserCount,
+         setDb as setUsersDb }     from './db/users.js'
 import { authRouter }              from './routes/auth.js'
+import { insertSnapshot, deleteOldRows, getDbStats } from './db/metrics.js'
 import { requestLogger, rateLimit, errorHandler, requireAuth } from './middleware/index.js'
 
 const app     = express()
@@ -48,30 +49,31 @@ app.use(express.json())
 app.use(requestLogger)
 app.use(rateLimit({ windowMs: 60000, max: 200 }))
 
-const dbInstance = openDb()
+const dbInstance = await openDb()
 setDb(dbInstance)
 setSettingsDb(dbInstance)
 setUsersDb(dbInstance)
 
-if (getUserCount() === 0) {
+if (await getUserCount() === 0) {
   await createUser('admin', 'admin123', 'admin')
   console.log('  ✓ Admin user seeded (username: admin, password: admin123)')
   console.log('  ⚠ Change the password after first login!')
 }
 
-const detector     = new AnomalyDetector()
-const recentHistory = []
-const thresholds = getThresholds()
+const detector   = new AnomalyDetector()
+const thresholds = await getThresholds()
 detector.setThresholds(thresholds)
 console.log(`  ✓ Thresholds loaded: CPU>${thresholds.cpu}% MEM>${thresholds.memory}% DISK>${thresholds.disk}%`)
+
+const recentHistory = []
 
 app.use('/api/auth', authRouter)
 
 app.get('/api/health', (req, res) => {
   res.json({
-    status:  'ok',
-    uptime:  process.uptime(),
-    time:    new Date().toISOString()
+    status: 'ok',
+    uptime: process.uptime(),
+    time:   new Date().toISOString()
   })
 })
 
@@ -84,17 +86,17 @@ app.use('/api/ports',     createPortsRouter(monitor))
 app.use('/api/history',   historyRouter)
 app.use('/api/settings',  createSettingsRouter(detector))
 
-app.get('/api/alerts', (req, res) => {
+app.get('/api/alerts', async (req, res) => {
   const limit = parseInt(req.query.limit) || 50
-  res.json(queryAlerts(limit))
+  res.json(await queryAlerts(limit))
 })
 
-app.get('/api/alerts/count', (req, res) => {
-  res.json(getAlertCount())
+app.get('/api/alerts/count', async (req, res) => {
+  res.json(await getAlertCount())
 })
 
-app.delete('/api/alerts/:id', (req, res) => {
-  deleteAlert(parseInt(req.params.id))
+app.delete('/api/alerts/:id', async (req, res) => {
+  await deleteAlert(parseInt(req.params.id))
   res.json({ success: true })
 })
 
@@ -118,8 +120,8 @@ app.get('/api/ai/test', async (req, res) => {
   }
 })
 
-app.get('/api/db/stats', (req, res) => {
-  res.json(getDbStats())
+app.get('/api/db/stats', async (req, res) => {
+  res.json(await getDbStats())
 })
 
 app.get('/api/socket-stats', (req, res) => {
@@ -158,7 +160,7 @@ monitor.on('snapshot', async (data) => {
 
   insertCount++
   if (insertCount % 5 === 0) {
-    insertSnapshot(snapshotCopy)
+    await insertSnapshot(snapshotCopy)
   }
 
   if (isAnalyzing) return
@@ -167,7 +169,7 @@ monitor.on('snapshot', async (data) => {
     isAnalyzing = true
     const alert = await detector.analyze(snapshotCopy, [...recentHistory])
     if (alert) {
-      insertAlert(alert)
+      await insertAlert(alert)
       io.emit('alert', alert)
       console.log(`[ALERT] ${alert.severity.toUpperCase()}: ${alert.title}`)
     }
@@ -178,8 +180,8 @@ monitor.on('snapshot', async (data) => {
   }
 })
 
-setInterval(deleteOldRows, 3600000)
-deleteOldRows()
+setInterval(() => deleteOldRows().catch(console.error), 3600000)
+deleteOldRows().catch(console.error)
 
 const shutdown = async (signal) => {
   if (isShuttingDown) return

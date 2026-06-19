@@ -9,7 +9,7 @@ export const adminRouter = Router()
 adminRouter.use(requireAdmin)
 
 adminRouter.get('/users', asyncHandler(async (req, res) => {
-  res.json(getAllUsers())
+  res.json(await getAllUsers())
 }))
 
 adminRouter.post('/users', asyncHandler(async (req, res) => {
@@ -40,14 +40,14 @@ adminRouter.put('/users/:id/role', asyncHandler(async (req, res) => {
     throw badRequest('Role must be admin or viewer')
 
   if (role === 'viewer') {
-    const allUsers = getAllUsers()
+    const allUsers = await getAllUsers()
     const admins   = allUsers.filter(u => u.role === 'admin')
-    const isAdmin  = allUsers.find(u => u.id === id)?.role === 'admin'
+    const isAdmin  = allUsers.find(u => Number(u.id) === id)?.role === 'admin'
     if (isAdmin && admins.length === 1)
       throw badRequest('Cannot remove the last admin')
   }
 
-  updateRole(id, role)
+  await updateRole(id, role)
   res.json({ id, role, updated: true })
 }))
 
@@ -57,6 +57,6 @@ adminRouter.delete('/users/:id', asyncHandler(async (req, res) => {
   if (id === req.user.userId)
     throw badRequest('Cannot delete your own account')
 
-  deleteUser(id)
+  await deleteUser(id)
   res.json({ id, deleted: true })
 }))

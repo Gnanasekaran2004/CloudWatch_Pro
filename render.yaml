@@ -4,25 +4,23 @@ services:
     runtime: docker
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
-    plan: starter
+    plan: free
     region: oregon
     healthCheckPath: /api/health
-    disk:
-      name: sqlite-data
-      mountPath: /app/data
-      sizeGB: 1
     envVars:
       - key: NODE_ENV
         value: production
       - key: PORT
         value: 3000
-      - key: DATA_DIR
-        value: /app/data
-      - key: JWT_SECRET
-        sync: false
       - key: JWT_EXPIRES_IN
         value: 8h
+      - key: JWT_SECRET
+        sync: false
       - key: GROQ_API_KEY
+        sync: false
+      - key: TURSO_URL
+        sync: false
+      - key: TURSO_AUTH_TOKEN
         sync: false
       - key: CORS_ORIGIN
         sync: false

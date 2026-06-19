@@ -1,8 +1,7 @@
 import { Router }                    from 'express'
 import jwt                            from 'jsonwebtoken'
 import { findByUsername, findById,
-         verifyPassword, createUser,
-         getUserCount }               from '../db/index.js'
+         verifyPassword, createUser } from '../db/index.js'
 import { asyncHandler, badRequest }   from '../utils/index.js'
 
 export const authRouter = Router()
@@ -20,7 +19,7 @@ authRouter.post('/login', asyncHandler(async (req, res) => {
     throw badRequest('Username and password are required')
   }
 
-  const user = findByUsername(username)
+  const user = await findByUsername(username)
   if (!user) {
     return res.status(401).json({ error: 'Invalid credentials' })
   }
@@ -46,7 +45,7 @@ authRouter.get('/me', asyncHandler(async (req, res) => {
   const token = authHeader.split(' ')[1]
   try {
     const payload = jwt.verify(token, process.env.JWT_SECRET)
-    const user    = findById(payload.userId)
+    const user    = await findById(payload.userId)
     if (!user) return res.status(401).json({ error: 'User not found' })
     res.json(user)
   } catch {

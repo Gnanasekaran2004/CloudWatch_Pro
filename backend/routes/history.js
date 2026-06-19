@@ -13,11 +13,11 @@ historyRouter.get('/', asyncHandler(async (req, res) => {
     })
   }
 
-  const rows = queryHistory(range)
+  const rows = await queryHistory(range)
 
   const data = rows.map(row => ({
-    timestamp:  row.timestamp,
-    time:       new Date(row.timestamp).toLocaleTimeString(),
+    timestamp:  Number(row.timestamp),
+    time:       new Date(Number(row.timestamp)).toLocaleTimeString(),
     cpu:        row.cpu,
     memory:     row.memory,
     disk:       row.disk,

@@ -1,15 +1,15 @@
-import Database from 'better-sqlite3'
-import path     from 'path'
+import { createClient } from '@libsql/client'
 
 let db = null
-const DATA_DIR = process.env.DATA_DIR || process.cwd()
-const DB_PATH  = path.join(DATA_DIR, 'metrics.db')
 
-export const openDb = () => {
-  db = new Database(DB_PATH)
+export const openDb = async () => {
+  db = createClient({
+    url:       process.env.TURSO_URL || 'file:./metrics.db',
+    authToken: process.env.TURSO_AUTH_TOKEN
+  })
 
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS metrics (
+  await db.batch([
+    `CREATE TABLE IF NOT EXISTS metrics (
       id         INTEGER PRIMARY KEY AUTOINCREMENT,
       timestamp  INTEGER NOT NULL,
       cpu        REAL    DEFAULT 0,
@@ -19,17 +19,9 @@ export const openDb = () => {
       tx_sec     REAL    DEFAULT 0,
       disk_read  REAL    DEFAULT 0,
       disk_write REAL    DEFAULT 0
-    )
-  `)
-
-  db.exec(`
-    CREATE INDEX IF NOT EXISTS idx_timestamp ON metrics (timestamp)
-  `)
-
-  console.log('  ✓ SQLite database opened:', DB_PATH)
-
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS alerts (
+    )`,
+    `CREATE INDEX IF NOT EXISTS idx_timestamp ON metrics (timestamp)`,
+    `CREATE TABLE IF NOT EXISTS alerts (
       id               INTEGER PRIMARY KEY AUTOINCREMENT,
       timestamp        INTEGER NOT NULL,
       severity         TEXT    DEFAULT 'medium',
@@ -39,67 +31,55 @@ export const openDb = () => {
       cpu              REAL    DEFAULT 0,
       memory           REAL    DEFAULT 0,
       disk             REAL    DEFAULT 0
-    )
-  `)
-
-  db.exec(`
-    CREATE INDEX IF NOT EXISTS idx_alerts_timestamp ON alerts (timestamp)
-  `)
-
-  console.log('  ✓ Alerts table ready')
-
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS settings (
+    )`,
+    `CREATE INDEX IF NOT EXISTS idx_alerts_timestamp ON alerts (timestamp)`,
+    `CREATE TABLE IF NOT EXISTS settings (
       key   TEXT PRIMARY KEY,
       value TEXT NOT NULL
-    )
-  `)
-
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS users (
+    )`,
+    `CREATE TABLE IF NOT EXISTS users (
       id            INTEGER PRIMARY KEY AUTOINCREMENT,
       username      TEXT    UNIQUE NOT NULL,
       password_hash TEXT    NOT NULL,
       role          TEXT    DEFAULT 'viewer',
       created_at    INTEGER DEFAULT (strftime('%s','now') * 1000)
-    )
-  `)
-
-  console.log('  ✓ Users table ready')
+    )`
+  ], 'write')
 
   const defaults = [
-    { key: 'threshold_cpu',    value: '85' },
-    { key: 'threshold_memory', value: '90' },
-    { key: 'threshold_disk',   value: '95' },
-    { key: 'cooldown_seconds', value: '60' }
+    ['threshold_cpu',    '85'],
+    ['threshold_memory', '90'],
+    ['threshold_disk',   '95'],
+    ['cooldown_seconds', '60']
   ]
 
-  const insertSetting = db.prepare(`
-    INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)
-  `)
-  defaults.forEach(({ key, value }) => insertSetting.run(key, value))
+  for (const [key, value] of defaults) {
+    await db.execute({
+      sql:  'INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)',
+      args: [key, value]
+    })
+  }
 
-  console.log('  ✓ Settings table ready')
+  console.log('  ✓ Turso database connected:', process.env.TURSO_URL || 'file:./metrics.db')
   return db
 }
 
-export const insertSnapshot = (snapshot) => {
+export const insertSnapshot = async (snapshot) => {
   if (!db || !snapshot) return
-  const stmt = db.prepare(`
-    INSERT INTO metrics
-      (timestamp, cpu, memory, disk, rx_sec, tx_sec, disk_read, disk_write)
-    VALUES
-      (@timestamp, @cpu, @memory, @disk, @rx_sec, @tx_sec, @disk_read, @disk_write)
-  `)
-  stmt.run({
-    timestamp:  snapshot.timestamp,
-    cpu:        snapshot.cpu?.percent     ?? 0,
-    memory:     snapshot.memory?.percent  ?? 0,
-    disk:       snapshot.disk?.percent    ?? 0,
-    rx_sec:     snapshot.network?.rx_sec  ?? 0,
-    tx_sec:     snapshot.network?.tx_sec  ?? 0,
-    disk_read:  snapshot.disk?.read       ?? 0,
-    disk_write: snapshot.disk?.write      ?? 0
+  await db.execute({
+    sql:  `INSERT INTO metrics
+             (timestamp, cpu, memory, disk, rx_sec, tx_sec, disk_read, disk_write)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    args: [
+      snapshot.timestamp,
+      snapshot.cpu?.percent     ?? 0,
+      snapshot.memory?.percent  ?? 0,
+      snapshot.disk?.percent    ?? 0,
+      snapshot.network?.rx_sec  ?? 0,
+      snapshot.network?.tx_sec  ?? 0,
+      snapshot.disk?.read       ?? 0,
+      snapshot.disk?.write      ?? 0
+    ]
   })
 }
 
@@ -110,32 +90,31 @@ const parseRange = (range) => {
   return parseInt(match[1]) * units[match[2]]
 }
 
-export const queryHistory = (range = '30m') => {
+export const queryHistory = async (range = '30m') => {
   if (!db) return []
   const since = Date.now() - parseRange(range)
-  const stmt  = db.prepare(`
-    SELECT * FROM metrics
-    WHERE  timestamp > ?
-    ORDER  BY timestamp ASC
-  `)
-  return stmt.all(since)
+  const { rows } = await db.execute({
+    sql:  'SELECT * FROM metrics WHERE timestamp > ? ORDER BY timestamp ASC',
+    args: [since]
+  })
+  return rows
 }
 
-export const deleteOldRows = () => {
+export const deleteOldRows = async () => {
   if (!db) return
   const cutoff = Date.now() - 24 * 3600000
-  db.prepare('DELETE FROM metrics WHERE timestamp < ?').run(cutoff)
+  await db.execute({ sql: 'DELETE FROM metrics WHERE timestamp < ?', args: [cutoff] })
   console.log('  ✓ Old metrics cleaned up')
 }
 
-export const getDbStats = () => {
+export const getDbStats = async () => {
   if (!db) return null
-  const count  = db.prepare('SELECT COUNT(*) as count FROM metrics').get()
-  const oldest = db.prepare('SELECT MIN(timestamp) as ts FROM metrics').get()
-  const newest = db.prepare('SELECT MAX(timestamp) as ts FROM metrics').get()
+  const { rows: c } = await db.execute('SELECT COUNT(*) as count FROM metrics')
+  const { rows: o } = await db.execute('SELECT MIN(timestamp) as ts FROM metrics')
+  const { rows: n } = await db.execute('SELECT MAX(timestamp) as ts FROM metrics')
   return {
-    rows:   count.count,
-    oldest: oldest.ts ? new Date(oldest.ts).toLocaleTimeString() : null,
-    newest: newest.ts ? new Date(newest.ts).toLocaleTimeString() : null
+    rows:   Number(c[0]?.count ?? 0),
+    oldest: o[0]?.ts ? new Date(Number(o[0].ts)).toLocaleTimeString() : null,
+    newest: n[0]?.ts ? new Date(Number(n[0].ts)).toLocaleTimeString() : null
   }
 }
