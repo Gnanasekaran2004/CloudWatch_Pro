@@ -2,10 +2,17 @@ import { Server } from 'socket.io'
 import jwt from 'jsonwebtoken'
 
 export const createSocketServer = (httpServer, monitor) => {
+  const corsOrigins = [
+    (process.env.CORS_ORIGIN || '').replace(/\/$/, ''),
+    'http://localhost:5173',
+    'http://localhost:4000'
+  ].filter(Boolean)
+
   const io = new Server(httpServer, {
     cors: {
-      origin:  process.env.CORS_ORIGIN || 'http://localhost:5173',
-      methods: ['GET', 'POST']
+      origin:      corsOrigins,
+      methods:     ['GET', 'POST'],
+      credentials: true
     }
   })
 
