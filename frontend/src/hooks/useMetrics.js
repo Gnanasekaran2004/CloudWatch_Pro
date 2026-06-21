@@ -16,12 +16,13 @@ export const useMetrics = () => {
       return
     }
 
-    const backendUrl = import.meta.env.VITE_BACKEND_URL
+    const backendUrl = import.meta.env.VITE_BACKEND_URL || window.location.origin
     const socket = io(backendUrl, {
       auth: { token },
       reconnection:         true,
       reconnectionDelay:    1000,
-      reconnectionAttempts: 10
+      reconnectionAttempts: 10,
+      transports:           ['websocket', 'polling']
     })
 
     socketRef.current = socket
