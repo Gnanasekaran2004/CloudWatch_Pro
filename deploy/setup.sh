@@ -1,7 +1,8 @@
 #!/bin/bash
 set -e
 
-REPO_DIR="/opt/CloudWatch_Pro"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_DIR="$(dirname "$SCRIPT_DIR")"
 DOMAIN="gsdev.qzz.io"
 LOG_DIR="/var/log/cloudwatch-pro"
 NGINX_CONF="/etc/nginx/sites-available/cloudwatch-pro"
